@@ -9,13 +9,15 @@ const STORE_CONFIG_KEY = "chronos_store_config";
 const DEFAULT_STORE_CONFIG: StoreConfig = {
   name: "CHRONOS",
   logo: "", // Empty means use default text logo
+  homepageBackground: "https://images.unsplash.com/photo-1508685096489-7aac29145fe0?auto=format&fit=crop&q=80&w=1920",
   description: "Excelência em cada segundo. Descubra nossa coleção exclusiva de relógios que transcendem o tempo.",
   phone: "(11) 99999-9999",
   email: "contato@chronos.com.br",
   address: "Av. Paulista, 1000 - São Paulo, SP",
   instagram: "@chronos.premium",
   freeShippingEnabled: true,
-  freeShippingMinAmount: 20000
+  freeShippingMinAmount: 20000,
+  collections: ["Luxo", "Minimalista", "Clássico", "Esportivo"]
 };
 
 export const getStoreConfig = (): StoreConfig => {
@@ -86,6 +88,10 @@ export const getOrders = (): Order[] => {
   return stored ? JSON.parse(stored) : [];
 };
 
+export const saveOrders = (orders: Order[]) => {
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+};
+
 export const saveOrder = (order: Order) => {
   const orders = getOrders();
   orders.push(order);
@@ -122,6 +128,10 @@ export const getUsers = (): User[] => {
   }
   
   return users;
+};
+
+export const saveUsers = (users: User[]) => {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
 };
 
 export const saveUser = (user: User) => {

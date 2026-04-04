@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { User as UserIcon, ShoppingBag, MapPin, Phone, Mail, Calendar, Hash, Save, ArrowLeft, LogOut, Package, ChevronRight } from 'lucide-react';
+import { User as UserIcon, ShoppingBag, MapPin, Phone, Mail, Calendar, Hash, ArrowLeft, LogOut, Package, ChevronRight, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Order } from './types';
 import { getCurrentUser, getOrders, setCurrentUser, updateUser } from './lib/storage';
@@ -9,9 +9,10 @@ import { Toast, ToastType } from './components/UI';
 
 export const UserProfile = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<User | null>(null);
   const [toast, setToast] = useState<{ message: string, type: ToastType, isVisible: boolean }>({ message: '', type: 'success', isVisible: false });
+  const toastTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = React.useRef(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,20 +23,27 @@ export const UserProfile = () => {
     }
     setUser(currentUser);
     setFormData(currentUser);
+    
+    setTimeout(() => {
+      isInitialMount.current = false;
+    }, 500);
   }, [navigate]);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData) {
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    if (formData && user && JSON.stringify(formData) !== JSON.stringify(user)) {
       updateUser(formData);
       // Update current session too
       const isPersistent = !!localStorage.getItem('chronos_current_user');
       setCurrentUser(formData, isPersistent);
       setUser(formData);
-      setIsEditing(false);
-      setToast({ message: 'Informações atualizadas com sucesso!', type: 'success', isVisible: true });
+      
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        setToast({ message: 'Informações atualizadas!', type: 'success', isVisible: true });
+      }, 1000);
     }
-  };
+  }, [formData, user]);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -114,31 +122,23 @@ export const UserProfile = () => {
           className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100"
         >
           {/* Title */}
-          <div className="p-8 border-b flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-8 border-b">
             <h2 className="text-xl font-serif font-bold uppercase tracking-widest text-premium-black">Informações Pessoais</h2>
-            {!isEditing && (
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="bg-gray-50 text-premium-black px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gold hover:text-white transition-all flex items-center gap-2"
-              >
-                <Save size={16} /> Editar Perfil
-              </button>
-            )}
+            <p className="text-sm text-gray-400 mt-1">Alterações são salvas automaticamente.</p>
           </div>
 
           <div className="p-6 sm:p-8 md:p-12">
-            <form onSubmit={handleSave} className="space-y-8">
+            <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
                     <UserIcon size={12} /> Nome Completo
                   </label>
                   <input 
-                    disabled={!isEditing}
                     type="text" 
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all"
+                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -146,11 +146,10 @@ export const UserProfile = () => {
                     <Mail size={12} /> E-mail
                   </label>
                   <input 
-                    disabled={!isEditing}
                     type="email" 
                     value={formData.email} 
                     onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all"
+                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -169,12 +168,11 @@ export const UserProfile = () => {
                     <Phone size={12} /> Telefone
                   </label>
                   <input 
-                    disabled={!isEditing}
                     type="tel" 
                     value={formData.phone || ''} 
                     onChange={e => setFormData({...formData, phone: e.target.value})}
                     placeholder="(00) 00000-0000"
-                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all"
+                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -182,11 +180,10 @@ export const UserProfile = () => {
                     <Calendar size={12} /> Data de Nascimento
                   </label>
                   <input 
-                    disabled={!isEditing}
                     type="date" 
                     value={formData.birthDate || ''} 
                     onChange={e => setFormData({...formData, birthDate: e.target.value})}
-                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all"
+                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all h-[56px]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -194,37 +191,29 @@ export const UserProfile = () => {
                     <MapPin size={12} /> Endereço de Entrega
                   </label>
                   <input 
-                    disabled={!isEditing}
                     type="text" 
                     value={formData.address || ''} 
                     onChange={e => setFormData({...formData, address: e.target.value})}
                     placeholder="Rua, Número, Bairro, Cidade - UF"
-                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all"
+                    className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all"
                   />
                 </div>
+                {user.role === 'admin' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                      <Lock size={12} /> Senha de Acesso
+                    </label>
+                    <input 
+                      type="text" 
+                      value={formData.password || ''} 
+                      onChange={e => setFormData({...formData, password: e.target.value})}
+                      placeholder="Sua senha secreta"
+                      className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all font-mono"
+                    />
+                  </div>
+                )}
               </div>
-
-              {isEditing && (
-                <div className="pt-8 border-t flex flex-col sm:flex-row justify-end gap-4">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setFormData(user);
-                    }}
-                    className="px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition-all text-xs"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit"
-                    className="bg-premium-black text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-gold/20 text-xs"
-                  >
-                    <Save size={18} /> Salvar Alterações
-                  </button>
-                </div>
-              )}
-            </form>
+            </div>
           </div>
         </motion.div>
       </main>

@@ -12,12 +12,22 @@
 }
 
 @layer base {
+  html, body {
+    @apply overflow-x-hidden w-full;
+  }
+  
   body {
     @apply bg-white text-premium-black font-sans antialiased;
   }
   
   h1, h2, h3, h4 {
     @apply font-serif;
+  }
+
+  input[type="date"] {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
   }
 }
 

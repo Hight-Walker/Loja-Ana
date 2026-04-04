@@ -71,7 +71,7 @@ const Navbar = ({ cartCount, onOpenCart, user, onLogout, storeConfig }: { cartCo
               </button>
             </div>
           ) : (
-            <Link to="/login" className="p-2 hover:text-gold transition-colors" title="Login">
+            <Link to="/login" className="p-2 hover:text-gold transition-colors" title="Entrar">
               <UserIcon size={24} />
             </Link>
           )}
@@ -93,7 +93,12 @@ const Hero = ({ storeConfig }: { storeConfig: StoreConfig }) => (
       transition={{ duration: 2.5, ease: "easeOut" }} 
       className="absolute inset-0 z-0"
     >
-      <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=2000" alt="Hero" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+      <img 
+        src={storeConfig.homepageBackground || "https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=2000"} 
+        alt="Imagem de Destaque" 
+        className="w-full h-full object-cover" 
+        referrerPolicy="no-referrer" 
+      />
     </motion.div>
     <div className="relative z-10 text-center px-6 max-w-5xl">
       <motion.span 
@@ -209,7 +214,16 @@ const Footer = ({ storeConfig }: { storeConfig: StoreConfig }) => (
         )}
         <p className="text-gray-400 max-w-sm mb-8 font-light leading-relaxed">{storeConfig.description}</p>
         <div className="flex space-x-6">
-          <a href="#" className="text-gray-400 hover:text-gold transition-colors"><Instagram size={20} /></a>
+          {storeConfig.instagram && (
+            <a 
+              href={storeConfig.instagram.startsWith('http') ? storeConfig.instagram : `https://instagram.com/${storeConfig.instagram.replace('@', '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-gray-400 hover:text-gold transition-colors"
+            >
+              <Instagram size={20} />
+            </a>
+          )}
           <a href="#" className="text-gray-400 hover:text-gold transition-colors"><Globe size={20} /></a>
         </div>
       </div>
@@ -224,10 +238,9 @@ const Footer = ({ storeConfig }: { storeConfig: StoreConfig }) => (
       <div>
         <h4 className="text-xs font-bold uppercase tracking-[0.2em] mb-8 text-gold">Coleções</h4>
         <ul className="space-y-4 text-gray-400 text-sm font-light">
-          <li><a href="#" className="hover:text-gold transition-colors">Luxo</a></li>
-          <li><a href="#" className="hover:text-gold transition-colors">Esportivo</a></li>
-          <li><a href="#" className="hover:text-gold transition-colors">Clássico</a></li>
-          <li><a href="#" className="hover:text-gold transition-colors">Minimalista</a></li>
+          {(storeConfig.collections || ["Luxo", "Esportivo", "Clássico", "Minimalista"]).map(c => (
+            <li key={c}><a href="#products" className="hover:text-gold transition-colors">{c}</a></li>
+          ))}
         </ul>
       </div>
     </div>

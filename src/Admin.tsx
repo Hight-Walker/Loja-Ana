@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Package, ShoppingCart, BarChart3, Plus, Edit2, Trash2, 
-  TrendingUp, DollarSign, Users, ArrowUpRight, ArrowDownRight, LogOut, X, Save, Image as ImageIcon,
-  Store, Globe, Instagram, Mail, Phone, MapPin, Menu, AlertCircle, Truck, User as ProfileIcon, Hash, Calendar, ArrowLeft
+  TrendingUp, DollarSign, Users, ArrowUpRight, ArrowDownRight, LogOut, X, Image as ImageIcon,
+  Store, Globe, Instagram, Mail, Phone, MapPin, Menu, AlertCircle, Truck, User as ProfileIcon, Hash, Calendar, ArrowLeft, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Product, Order, AnalyticsData, User, StoreConfig, OrderStatus, PaymentMethod } from './types';
-import { getProducts, saveProducts, getOrders, getUsers, setCurrentUser, clearAllSessions, getStoreConfig, saveStoreConfig, updateOrder, deleteOrder, updateUser, getCurrentUser } from './lib/storage';
+import { getProducts, saveProducts, getOrders, saveOrders, getUsers, saveUsers, setCurrentUser, clearAllSessions, getStoreConfig, saveStoreConfig, updateOrder, deleteOrder, updateUser, getCurrentUser } from './lib/storage';
 import { formatPrice, cn } from './lib/utils';
 import { Toast, Modal, ToastType } from './components/UI';
 
@@ -34,42 +34,42 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue }: any) => (
   </div>
 );
 
-const ProductModal = ({ product, onClose, onSave }: { product: Product | null, onClose: () => void, onSave: (p: Product) => void }) => {
+const ProductModal = ({ product, collections, onClose, onSave }: { product: Product | null, collections: string[], onClose: () => void, onSave: (p: Product) => void }) => {
   const [formData, setFormData] = useState<Product>(product || {
     id: Math.random().toString(36).substr(2, 9),
     name: '',
     price: 0,
     description: '',
     image: '',
-    category: 'Luxo',
+    category: collections[0] || 'Luxo',
     isBestSeller: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-save on any change
+  useEffect(() => {
     onSave(formData);
-  };
+  }, [formData, onSave]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white max-w-2xl w-full rounded-3xl shadow-2xl overflow-hidden"
+        className="bg-white max-w-2xl w-full rounded-3xl shadow-2xl overflow-hidden my-auto"
       >
-        <div className="p-8 border-b flex items-center justify-between">
-          <h2 className="text-2xl font-serif">{product ? 'Editar Produto' : 'Novo Produto'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} /></button>
+        <div className="p-6 sm:p-8 border-b flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-serif">{product ? 'Editar Produto' : 'Novo Produto'}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+        <div className="p-6 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Nome</label>
-              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold" />
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Nome</label>
+              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold text-sm" />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Preço (R$)</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Preço (R$)</label>
               <input 
                 required 
                 type="number" 
@@ -79,19 +79,18 @@ const ProductModal = ({ product, onClose, onSave }: { product: Product | null, o
                   const val = e.target.value;
                   setFormData({...formData, price: val === '' ? 0 : Number(val)});
                 }} 
-                className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold" 
+                className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold text-sm" 
                 placeholder="0.00"
               />
             </div>
           </div>
 
-          
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">URL da Imagem</label>
-            <div className="flex gap-4">
-              <input required type="text" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="flex-1 bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold" />
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">URL da Imagem</label>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <input required type="text" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="flex-1 bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold text-sm" />
               {formData.image && (
-                <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100">
+                <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0 self-center sm:self-auto">
                   <img src={formData.image} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
               )}
@@ -99,31 +98,34 @@ const ProductModal = ({ product, onClose, onSave }: { product: Product | null, o
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Descrição</label>
-            <textarea required rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold resize-none" />
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Descrição</label>
+            <textarea required rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold resize-none text-sm" />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Categoria</label>
-              <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold">
-                <option value="Luxo">Luxo</option>
-                <option value="Minimalista">Minimalista</option>
-                <option value="Clássico">Clássico</option>
-                <option value="Esportivo">Esportivo</option>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Coleção</label>
+              <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold text-sm">
+                {collections.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
-            <div className="flex items-center gap-3 pt-8">
+            <div className="flex items-center gap-3 pt-2 sm:pt-8">
               <input type="checkbox" id="bestseller" checked={formData.isBestSeller} onChange={e => setFormData({...formData, isBestSeller: e.target.checked})} className="w-5 h-5 accent-gold" />
               <label htmlFor="bestseller" className="text-sm font-medium">Marcar como Mais Vendido</label>
             </div>
           </div>
 
-          <button type="submit" className="w-full bg-premium-black text-white py-5 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all duration-300 flex items-center justify-center gap-3">
-            <Save size={20} />
-            Salvar Alterações
-          </button>
-        </form>
+          <div className="pt-4 border-t flex justify-end">
+            <button 
+              onClick={onClose} 
+              className="bg-premium-black text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all text-xs"
+            >
+              Concluído
+            </button>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
@@ -132,44 +134,44 @@ const ProductModal = ({ product, onClose, onSave }: { product: Product | null, o
 const OrderModal = ({ order, onClose, onSave }: { order: Order, onClose: () => void, onSave: (o: Order) => void }) => {
   const [formData, setFormData] = useState<Order>({ ...order });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-save on any change
+  useEffect(() => {
     onSave(formData);
-  };
+  }, [formData, onSave]);
 
   const statuses: OrderStatus[] = ['Pendente', 'Processando', 'Enviado', 'Entregue', 'Cancelado'];
   const paymentMethods: PaymentMethod[] = ['Cartão de Crédito', 'Boleto', 'Pix'];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white max-w-2xl w-full rounded-3xl shadow-2xl overflow-hidden"
+        className="bg-white max-w-2xl w-full rounded-3xl shadow-2xl overflow-hidden my-auto"
       >
-        <div className="p-8 border-b flex items-center justify-between">
-          <h2 className="text-2xl font-serif">Editar Pedido #{order.id}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} /></button>
+        <div className="p-6 sm:p-8 border-b flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-serif">Editar Pedido #{order.id}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+        <div className="p-6 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Status do Pedido</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Status do Pedido</label>
               <select 
                 value={formData.status} 
                 onChange={e => setFormData({...formData, status: e.target.value as OrderStatus})} 
-                className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold"
+                className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold text-sm"
               >
                 {statuses.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Forma de Pagamento</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Forma de Pagamento</label>
               <select 
                 value={formData.paymentMethod} 
                 onChange={e => setFormData({...formData, paymentMethod: e.target.value as PaymentMethod})} 
-                className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold"
+                className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold text-sm"
               >
                 {paymentMethods.map(pm => <option key={pm} value={pm}>{pm}</option>)}
               </select>
@@ -177,7 +179,7 @@ const OrderModal = ({ order, onClose, onSave }: { order: Order, onClose: () => v
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Informações do Cliente</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Informações do Cliente</label>
             <div className="p-4 bg-gray-50 rounded-xl space-y-1">
               <p className="text-sm font-medium">{formData.customer.name}</p>
               <p className="text-xs text-gray-500">{formData.customer.email}</p>
@@ -186,30 +188,34 @@ const OrderModal = ({ order, onClose, onSave }: { order: Order, onClose: () => v
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Itens do Pedido</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Itens do Pedido</label>
             <div className="max-h-40 overflow-y-auto space-y-2">
               {formData.items.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
-                    <span className="text-sm font-medium">{item.name}</span>
+                    <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
+                    <span className="text-sm font-medium truncate max-w-[150px]">{item.name}</span>
                   </div>
-                  <span className="text-xs font-bold text-gray-400">{item.quantity}x {formatPrice(item.price)}</span>
+                  <span className="text-xs font-bold text-gray-400 shrink-0">{item.quantity}x {formatPrice(item.price)}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="pt-4 border-t flex justify-between items-center">
-            <span className="text-sm font-bold uppercase tracking-widest text-gray-400">Total do Pedido</span>
-            <span className="text-2xl font-serif font-bold text-gold">{formatPrice(formData.total)}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total do Pedido</span>
+            <span className="text-xl sm:text-2xl font-serif font-bold text-gold">{formatPrice(formData.total)}</span>
           </div>
 
-          <button type="submit" className="w-full bg-premium-black text-white py-5 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all duration-300 flex items-center justify-center gap-3">
-            <Save size={20} />
-            Salvar Alterações
-          </button>
-        </form>
+          <div className="pt-4 border-t flex justify-end">
+            <button 
+              onClick={onClose} 
+              className="bg-premium-black text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all text-xs"
+            >
+              Concluído
+            </button>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
@@ -222,16 +228,28 @@ export const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [storeConfig, setStoreConfig] = useState<StoreConfig>(getStoreConfig());
+  const [storeConfig, setStoreConfig] = useState<StoreConfig>(() => {
+    const config = getStoreConfig();
+    // Ensure default collections are present if none exist
+    if (!config.collections || config.collections.length === 0) {
+      return {
+        ...config,
+        collections: ["Luxo", "Minimalista", "Clássico", "Esportivo"]
+      };
+    }
+    return config;
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [newCollectionName, setNewCollectionName] = useState('');
   
   // Profile State
   const [user, setUser] = useState<User | null>(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileFormData, setProfileFormData] = useState<User | null>(null);
+  const isInitialMount = React.useRef(true);
+  const toastTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   // Custom UI State
   const [toast, setToast] = useState<{ message: string, type: ToastType, isVisible: boolean }>({ message: '', type: 'success', isVisible: false });
@@ -249,45 +267,139 @@ export const AdminDashboard = () => {
       setUser(currentUser);
       setProfileFormData(currentUser);
     }
+    
+    // Set initial mount to false after a short delay to avoid triggering auto-save toasts on load
+    setTimeout(() => {
+      isInitialMount.current = false;
+    }, 500);
   }, []);
 
-  const showToast = (message: string, type: ToastType = 'success') => {
-    setToast({ message, type, isVisible: true });
-  };
+  // Auto-save Store Config
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    saveStoreConfig(storeConfig);
+    window.dispatchEvent(new Event('storeConfigUpdated'));
+    
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      showToast('Configurações da loja salvas!');
+    }, 1000);
+  }, [storeConfig]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (profileFormData) {
+  // Auto-save Products
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    if (products.length > 0) {
+      saveProducts(products);
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        showToast('Produtos atualizados!');
+      }, 1000);
+    }
+  }, [products]);
+
+  // Auto-save Orders
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    if (orders.length > 0) {
+      saveOrders(orders);
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        showToast('Pedidos atualizados!');
+      }, 1000);
+    }
+  }, [orders]);
+
+  // Auto-save Profile
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    if (profileFormData && user) {
       updateUser(profileFormData);
-      // Update current session too
       const isPersistent = !!localStorage.getItem('chronos_current_user');
       setCurrentUser(profileFormData, isPersistent);
       setUser(profileFormData);
-      setIsEditingProfile(false);
-      showToast('Suas informações foram atualizadas com sucesso!');
+      
+      // Also update in users list
+      const updatedUsers = users.map(u => u.id === profileFormData.id ? profileFormData : u);
+      setUsers(updatedUsers);
+      
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        showToast('Perfil atualizado!');
+      }, 1000);
     }
+  }, [profileFormData]);
+
+  // Auto-save Users List
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    if (users.length > 0) {
+      saveUsers(users);
+    }
+  }, [users]);
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ message, type, isVisible: true });
   };
 
   const handleSaveProduct = (product: Product) => {
     let newProducts;
     if (products.find(p => p.id === product.id)) {
       newProducts = products.map(p => p.id === product.id ? product : p);
-      showToast('Produto atualizado com sucesso!');
     } else {
       newProducts = [...products, product];
-      showToast('Produto criado com sucesso!');
     }
     setProducts(newProducts);
-    saveProducts(newProducts);
-    setIsModalOpen(false);
-    setEditingProduct(null);
+    // Auto-save handled by useEffect
+  };
+
+  const handleAddCollection = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCollectionName.trim()) return;
+    
+    const collections = storeConfig.collections || [];
+    if (collections.includes(newCollectionName.trim())) {
+      showToast('Esta coleção já existe.', 'error');
+      return;
+    }
+    
+    const updatedConfig = {
+      ...storeConfig,
+      collections: [...collections, newCollectionName.trim()]
+    };
+    setStoreConfig(updatedConfig);
+    setNewCollectionName('');
+    showToast('Coleção adicionada com sucesso!');
+  };
+
+  const handleDeleteCollection = (collectionName: string) => {
+    const productsInCollection = products.filter(p => p.category === collectionName);
+    
+    if (productsInCollection.length > 0) {
+      if (!window.confirm(`Existem ${productsInCollection.length} produtos nesta coleção. Ao excluí-la, esses produtos ficarão sem categoria. Deseja continuar?`)) {
+        return;
+      }
+      
+      // Update products to have no category or a default one
+      const updatedProducts = products.map(p => 
+        p.category === collectionName ? { ...p, category: 'Sem Categoria' } : p
+      );
+      setProducts(updatedProducts);
+    }
+
+    const collections = storeConfig.collections || [];
+    const updatedConfig = {
+      ...storeConfig,
+      collections: collections.filter(c => c !== collectionName)
+    };
+    setStoreConfig(updatedConfig);
+    showToast('Coleção removida com sucesso!');
   };
 
   const handleSaveOrder = (order: Order) => {
-    updateOrder(order);
-    setOrders(getOrders());
-    setEditingOrder(null);
-    showToast('Pedido atualizado com sucesso!');
+    const newOrders = orders.map(o => o.id === order.id ? order : o);
+    setOrders(newOrders);
+    // Auto-save handled by useEffect
   };
 
   const handleDeleteProduct = (id: string) => {
@@ -303,11 +415,10 @@ export const AdminDashboard = () => {
       if (deleteModal.type === 'product') {
         const newProducts = products.filter(p => p.id !== deleteModal.id);
         setProducts(newProducts);
-        saveProducts(newProducts);
         showToast('Produto excluído com sucesso!', 'info');
       } else {
-        deleteOrder(deleteModal.id);
-        setOrders(getOrders());
+        const newOrders = orders.filter(o => o.id !== deleteModal.id);
+        setOrders(newOrders);
         showToast('Pedido excluído com sucesso!', 'info');
       }
       setDeleteModal({ isOpen: false, type: 'product', id: null });
@@ -323,18 +434,31 @@ export const AdminDashboard = () => {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setStoreConfig({ ...storeConfig, logo: reader.result as string });
+        setStoreConfig(prev => ({ ...prev, logo: reader.result as string }));
+        showToast('Logo atualizada com sucesso!', 'success');
       };
       reader.readAsDataURL(file);
+      // Reset input value to allow selecting the same file again
+      e.target.value = '';
     }
   };
 
-  const handleSaveStoreConfig = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveStoreConfig(storeConfig);
-    showToast('Configurações da loja salvas com sucesso!');
-    // Trigger a custom event to notify other components (like Storefront)
-    window.dispatchEvent(new Event('storeConfigUpdated'));
+  const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit for localStorage
+        showToast('A imagem é muito grande. Por favor, escolha uma imagem menor que 1MB.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStoreConfig(prev => ({ ...prev, homepageBackground: reader.result as string }));
+        showToast('Background atualizado com sucesso!', 'success');
+      };
+      reader.readAsDataURL(file);
+      // Reset input value to allow selecting the same file again
+      e.target.value = '';
+    }
   };
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
@@ -434,13 +558,13 @@ export const AdminDashboard = () => {
         
         <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
           {[
-            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
             { id: 'products', label: 'Produtos', icon: Package },
             { id: 'orders', label: 'Pedidos', icon: ShoppingCart },
             { id: 'customers', label: 'Clientes', icon: Users },
             { id: 'mystore', label: 'Minha Loja', icon: Store },
             { id: 'profile', label: 'Minhas Informações', icon: ProfileIcon },
-            { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+            { id: 'analytics', label: 'Análises', icon: BarChart3 },
           ].map(item => (
             <button
               key={item.id}
@@ -475,22 +599,27 @@ export const AdminDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 p-6 md:p-10">
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-4">
+      <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-10 min-w-0 overflow-x-hidden">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 md:mb-10 gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-serif capitalize">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-serif capitalize">
               {activeTab === 'profile' ? 'Minhas Informações' : 
                activeTab === 'mystore' ? 'Minha Loja' : 
+               activeTab === 'dashboard' ? 'Painel de Controle' :
+               activeTab === 'products' ? 'Gerenciar Produtos' :
+               activeTab === 'orders' ? 'Gerenciar Pedidos' :
+               activeTab === 'customers' ? 'Base de Clientes' :
+               activeTab === 'analytics' ? 'Análises de Desempenho' :
                activeTab}
             </h2>
-            <p className="text-gray-400 text-sm">Bem-vindo de volta, Administrador.</p>
+            <p className="text-gray-400 text-xs sm:text-sm">Bem-vindo de volta, Administrador.</p>
           </div>
           {activeTab === 'products' && (
             <button 
               onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
-              className="bg-gold text-white px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest flex items-center gap-2 hover:bg-premium-black transition-all self-start sm:self-auto"
+              className="bg-gold text-white px-5 py-3 rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-premium-black transition-all self-start sm:self-auto shadow-lg shadow-gold/20"
             >
-              <Plus size={18} /> Novo Produto
+              <Plus size={16} /> Novo Produto
             </button>
           )}
         </header>
@@ -504,46 +633,46 @@ export const AdminDashboard = () => {
             transition={{ duration: 0.3 }}
           >
             {activeTab === 'dashboard' && (
-          <div className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-8 sm:space-y-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard title="Faturamento Total" value={formatPrice(totalRevenue)} icon={DollarSign} trend="up" trendValue="12%" />
               <StatCard title="Total de Pedidos" value={totalSalesCount} icon={ShoppingCart} trend="up" trendValue="8%" />
               <StatCard title="Produtos Ativos" value={products.length} icon={Package} />
               <StatCard title="Novos Clientes" value={users.length} icon={Users} trend="up" trendValue="100%" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-serif mb-6">Mais Vendidos</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h3 className="text-lg sm:text-xl font-serif mb-6">Mais Vendidos</h3>
                 <div className="space-y-4">
                   {bestSellers.length > 0 ? bestSellers.map(([name, qty], idx) => (
                     <div key={name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <span className="text-gray-300 font-serif text-2xl">0{idx + 1}</span>
-                        <span className="font-medium">{name}</span>
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <span className="text-gray-300 font-serif text-xl sm:text-2xl">0{idx + 1}</span>
+                        <span className="font-medium text-sm sm:text-base truncate max-w-[150px] sm:max-w-none">{name}</span>
                       </div>
-                      <span className="bg-gold/10 text-gold px-3 py-1 rounded-full text-xs font-bold">{qty} vendas</span>
+                      <span className="bg-gold/10 text-gold px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold shrink-0">{qty} vendas</span>
                     </div>
-                  )) : <p className="text-gray-400 italic">Nenhuma venda registrada.</p>}
+                  )) : <p className="text-gray-400 italic text-sm">Nenhuma venda registrada.</p>}
                 </div>
               </div>
               
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-serif mb-6">Pedidos Recentes</h3>
+              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h3 className="text-lg sm:text-xl font-serif mb-6">Pedidos Recentes</h3>
                 <div className="space-y-4">
                   {orders.slice(-5).reverse().map(order => (
-                    <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                      <div>
-                        <p className="text-xs font-bold text-gray-400">#{order.id}</p>
-                        <p className="font-medium text-sm">{order.customer.name}</p>
+                    <div key={order.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-2xl">
+                      <div className="truncate pr-2">
+                        <p className="text-[10px] font-bold text-gray-400">#{order.id}</p>
+                        <p className="font-medium text-xs sm:text-sm truncate">{order.customer.name}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm">{formatPrice(order.total)}</p>
-                        <p className="text-[10px] text-gray-400">{new Date(order.date).toLocaleDateString()}</p>
+                      <div className="text-right shrink-0">
+                        <p className="font-bold text-xs sm:text-sm">{formatPrice(order.total)}</p>
+                        <p className="text-[9px] sm:text-[10px] text-gray-400">{new Date(order.date).toLocaleDateString()}</p>
                       </div>
                     </div>
                   ))}
-                  {orders.length === 0 && <p className="text-gray-400 italic">Nenhum pedido recente.</p>}
+                  {orders.length === 0 && <p className="text-gray-400 italic text-sm">Nenhum pedido recente.</p>}
                 </div>
               </div>
             </div>
@@ -551,8 +680,56 @@ export const AdminDashboard = () => {
         )}
 
             {activeTab === 'products' && (
-              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
+              <div className="space-y-8">
+                {/* Collection Management */}
+                <div className="bg-white p-5 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-serif">Gerenciar Coleções</h3>
+                      <p className="text-xs sm:text-sm text-gray-400">Adicione ou remova categorias de produtos da sua loja.</p>
+                    </div>
+                    <div className="bg-gold/10 text-gold px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest self-start sm:self-auto">
+                      {(storeConfig.collections || []).length} Coleções
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+                    {(storeConfig.collections || []).map(c => (
+                      <div key={c} className="flex items-center justify-between bg-gray-50 p-3 sm:p-4 rounded-2xl border border-transparent hover:border-gold/20 hover:bg-white hover:shadow-md transition-all group">
+                        <span className="text-xs sm:text-sm font-medium truncate pr-2">{c}</span>
+                        <button 
+                          onClick={() => handleDeleteCollection(c)}
+                          className="text-gray-300 hover:text-red-500 transition-colors p-1.5"
+                          title="Excluir Coleção"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    {(!storeConfig.collections || storeConfig.collections.length === 0) && (
+                      <p className="col-span-full text-gray-400 italic text-xs sm:text-sm py-4">Nenhuma coleção personalizada criada.</p>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleAddCollection} className="flex flex-col sm:flex-row gap-3 bg-gray-50 p-2 rounded-2xl">
+                    <input 
+                      type="text" 
+                      value={newCollectionName}
+                      onChange={e => setNewCollectionName(e.target.value)}
+                      placeholder="Nova coleção (ex: Edição Limitada)..."
+                      className="flex-1 bg-transparent border-none px-4 py-3 outline-none text-xs sm:text-sm"
+                    />
+                    <button 
+                      type="submit"
+                      className="bg-premium-black text-white px-6 py-3 rounded-xl font-bold text-[9px] sm:text-[10px] uppercase tracking-widest hover:bg-gold transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                    >
+                      <Plus size={14} /> Adicionar
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="overflow-x-auto">
                   <table className="w-full text-left min-w-[800px]">
                     <thead className="bg-gray-50 text-xs font-bold uppercase tracking-widest text-gray-400">
                       <tr>
@@ -578,9 +755,9 @@ export const AdminDashboard = () => {
                           <td className="px-8 py-6 font-bold">{formatPrice(product.price)}</td>
                           <td className="px-8 py-6">
                             {product.isBestSeller ? (
-                              <span className="bg-gold/10 text-gold text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Best Seller</span>
+                              <span className="bg-gold/10 text-gold text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Mais Vendido</span>
                             ) : (
-                              <span className="bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Standard</span>
+                              <span className="bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Padrão</span>
                             )}
                           </td>
                           <td className="px-8 py-6 text-right">
@@ -595,7 +772,8 @@ export const AdminDashboard = () => {
                   </table>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
             {activeTab === 'orders' && (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
@@ -687,31 +865,46 @@ export const AdminDashboard = () => {
                     <th className="px-8 py-6">Nome / E-mail</th>
                     <th className="px-8 py-6">CPF</th>
                     <th className="px-8 py-6">Telefone</th>
+                    <th className="px-8 py-6">Senha</th>
                     <th className="px-8 py-6">Nível</th>
                     <th className="px-8 py-6">Endereço</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {users.map(user => (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                  {users.map(u => (
+                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-8 py-6">
                         <div>
-                          <p className="font-bold text-premium-black">{user.name}</p>
-                          <p className="text-xs text-gray-400">{user.email}</p>
+                          <p className="font-bold text-premium-black">{u.name}</p>
+                          <p className="text-xs text-gray-400">{u.email}</p>
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-sm font-mono text-gray-600">{user.cpf || 'N/A'}</td>
-                      <td className="px-8 py-6 text-sm text-gray-600">{user.phone || 'N/A'}</td>
+                      <td className="px-8 py-6 text-sm font-mono text-gray-600">{u.cpf || 'N/A'}</td>
+                      <td className="px-8 py-6 text-sm text-gray-600">{u.phone || 'N/A'}</td>
+                      <td className="px-8 py-6">
+                        <div className="relative group/pass">
+                          <input 
+                            type="text" 
+                            value={u.password || ''} 
+                            onChange={e => {
+                              const newUsers = users.map(curr => curr.id === u.id ? {...curr, password: e.target.value} : curr);
+                              setUsers(newUsers);
+                            }}
+                            className="bg-transparent border-b border-transparent hover:border-gray-200 focus:border-gold outline-none text-sm font-mono text-gray-600 w-24 transition-all"
+                          />
+                          <Lock size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-300 opacity-0 group-hover/pass:opacity-100 transition-opacity" />
+                        </div>
+                      </td>
                       <td className="px-8 py-6">
                         <span className={cn(
                           "text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest",
-                          user.role === 'admin' ? "bg-gold/10 text-gold" : "bg-blue-50 text-blue-600"
+                          u.role === 'admin' ? "bg-gold/10 text-gold" : "bg-blue-50 text-blue-600"
                         )}>
-                          {user.role}
+                          {u.role === 'admin' ? 'Administrador' : 'Cliente'}
                         </span>
                       </td>
                       <td className="px-8 py-6 text-sm text-gray-500 max-w-xs truncate">
-                        {user.address || 'N/A'}
+                        {u.address || 'N/A'}
                       </td>
                     </tr>
                   ))}
@@ -726,10 +919,10 @@ export const AdminDashboard = () => {
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-8 border-b">
                 <h3 className="text-xl font-serif">Configurações da Loja</h3>
-                <p className="text-sm text-gray-400">Personalize a identidade visual e as informações de contato da sua loja.</p>
+                <p className="text-sm text-gray-400">Personalize a identidade visual e as informações de contato da sua loja. Alterações são salvas automaticamente.</p>
               </div>
               
-              <form onSubmit={handleSaveStoreConfig} className="p-8 space-y-8">
+              <div className="p-8 space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
@@ -744,21 +937,12 @@ export const AdminDashboard = () => {
                     />
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
                       <ImageIcon size={12} /> Logo da Loja
                     </label>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="flex-1 space-y-4">
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            value={storeConfig.logo} 
-                            onChange={e => setStoreConfig({...storeConfig, logo: e.target.value})}
-                            className="flex-1 bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all text-sm"
-                            placeholder="URL da imagem ou faça upload abaixo"
-                          />
-                        </div>
+                    <div className="flex flex-col sm:flex-row gap-6 items-start">
+                      <div className="flex-1 w-full">
                         <div className="relative">
                           <input 
                             type="file" 
@@ -769,19 +953,78 @@ export const AdminDashboard = () => {
                           />
                           <label 
                             htmlFor="logo-upload"
-                            className="flex items-center justify-center gap-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-600 py-3 rounded-xl cursor-pointer transition-all border-2 border-dashed border-gray-300 text-xs font-bold uppercase tracking-widest"
+                            className="flex items-center justify-center gap-3 w-full bg-gray-50 hover:bg-gray-100 text-gray-600 py-4 rounded-2xl cursor-pointer transition-all border-2 border-dashed border-gray-200 text-xs font-bold uppercase tracking-widest"
                           >
-                            <Plus size={16} /> Upload de Arquivo Local
+                            <Plus size={18} /> Selecionar Logo
                           </label>
                         </div>
                       </div>
                       {storeConfig.logo && (
-                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center self-center sm:self-start">
-                          <img src={storeConfig.logo} alt="Logo Preview" className="max-w-full max-h-full object-contain p-2" referrerPolicy="no-referrer" />
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="relative group">
+                            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
+                              <img src={storeConfig.logo} alt="Logo Preview" className="max-w-full max-h-full object-contain p-2" referrerPolicy="no-referrer" />
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setStoreConfig({...storeConfig, logo: ''});
+                              showToast('Logo removida. A loja voltará a exibir o nome em texto.');
+                            }}
+                            className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors text-[10px] font-bold uppercase tracking-widest"
+                          >
+                            <Trash2 size={14} /> Excluir Logo
+                          </button>
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-400">Suporta URLs ou arquivos locais (máx. 1MB). Deixe em branco para usar texto.</p>
+                    <p className="text-[10px] text-gray-400">Faça upload da logo da sua marca (máx. 1MB). Se não houver logo, será exibido o nome da loja em texto.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                      <ImageIcon size={12} /> Background da Home
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-6 items-start">
+                      <div className="flex-1 w-full">
+                        <div className="relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={handleBackgroundUpload}
+                            className="hidden"
+                            id="bg-upload"
+                          />
+                          <label 
+                            htmlFor="bg-upload"
+                            className="flex items-center justify-center gap-3 w-full bg-gray-50 hover:bg-gray-100 text-gray-600 py-4 rounded-2xl cursor-pointer transition-all border-2 border-dashed border-gray-200 text-xs font-bold uppercase tracking-widest"
+                          >
+                            <Plus size={18} /> Selecionar Background
+                          </label>
+                        </div>
+                      </div>
+                      {storeConfig.homepageBackground && (
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="relative group">
+                            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
+                              <img src={storeConfig.homepageBackground} alt="BG Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setStoreConfig({...storeConfig, homepageBackground: ''});
+                              showToast('Background removido.');
+                            }}
+                            className="flex items-center gap-2 text-red-500 hover:text-red-700 transition-colors text-[10px] font-bold uppercase tracking-widest"
+                          >
+                            <Trash2 size={14} /> Excluir Background
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-400">Imagem de fundo da tela inicial (máx. 1MB).</p>
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
@@ -838,14 +1081,14 @@ export const AdminDashboard = () => {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                      <Instagram size={12} /> Instagram
+                      <Instagram size={12} /> Link do Instagram
                     </label>
                     <input 
                       type="text" 
                       value={storeConfig.instagram} 
                       onChange={e => setStoreConfig({...storeConfig, instagram: e.target.value})}
                       className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all"
-                      placeholder="@sualoja"
+                      placeholder="https://instagram.com/sualoja"
                     />
                   </div>
 
@@ -894,16 +1137,7 @@ export const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
-
-                <div className="pt-8 border-t flex justify-end">
-                  <button 
-                    type="submit"
-                    className="w-full sm:w-auto bg-premium-black text-white px-6 sm:px-12 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-gold/20 text-xs sm:text-sm"
-                  >
-                    <Save size={20} /> Salvar Configurações
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
@@ -913,22 +1147,21 @@ export const AdminDashboard = () => {
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6 sm:p-8 border-b">
                 <h3 className="text-xl font-serif">Minhas Informações</h3>
-                <p className="text-sm text-gray-400">Gerencie seus dados pessoais de acesso ao painel.</p>
+                <p className="text-sm text-gray-400">Gerencie seus dados pessoais de acesso ao painel. Alterações são salvas automaticamente.</p>
               </div>
               
               <div className="p-6 sm:p-8">
-                <form onSubmit={handleSaveProfile} className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
                         <ProfileIcon size={12} /> Nome Completo
                       </label>
                       <input 
-                        disabled={!isEditingProfile}
                         type="text" 
                         value={profileFormData.name} 
                         onChange={e => setProfileFormData({...profileFormData, name: e.target.value})}
-                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all text-sm sm:text-base"
+                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all text-sm sm:text-base"
                       />
                     </div>
                     <div className="space-y-2">
@@ -936,11 +1169,10 @@ export const AdminDashboard = () => {
                         <Mail size={12} /> E-mail
                       </label>
                       <input 
-                        disabled={!isEditingProfile}
                         type="email" 
                         value={profileFormData.email} 
                         onChange={e => setProfileFormData({...profileFormData, email: e.target.value})}
-                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all text-sm sm:text-base"
+                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all text-sm sm:text-base"
                       />
                     </div>
                     <div className="space-y-2">
@@ -959,12 +1191,11 @@ export const AdminDashboard = () => {
                         <Phone size={12} /> Telefone
                       </label>
                       <input 
-                        disabled={!isEditingProfile}
                         type="tel" 
                         value={profileFormData.phone || ''} 
                         onChange={e => setProfileFormData({...profileFormData, phone: e.target.value})}
                         placeholder="(00) 00000-0000"
-                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all text-sm sm:text-base"
+                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all text-sm sm:text-base"
                       />
                     </div>
                     <div className="space-y-2">
@@ -972,59 +1203,40 @@ export const AdminDashboard = () => {
                         <Calendar size={12} /> Data de Nascimento
                       </label>
                       <input 
-                        disabled={!isEditingProfile}
                         type="date" 
                         value={profileFormData.birthDate || ''} 
                         onChange={e => setProfileFormData({...profileFormData, birthDate: e.target.value})}
-                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all text-sm sm:text-base"
+                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all text-sm sm:text-base h-[56px]"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 sm:col-span-2">
                       <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
                         <MapPin size={12} /> Endereço
                       </label>
                       <input 
-                        disabled={!isEditingProfile}
                         type="text" 
                         value={profileFormData.address || ''} 
                         onChange={e => setProfileFormData({...profileFormData, address: e.target.value})}
                         placeholder="Rua, Número, Bairro, Cidade - UF"
-                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold disabled:opacity-60 transition-all text-sm sm:text-base"
+                        className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all text-sm sm:text-base"
                       />
                     </div>
-                  </div>
-
-                  <div className="pt-8 border-t flex flex-col sm:flex-row justify-end gap-4">
-                    {!isEditingProfile ? (
-                      <button 
-                        type="button"
-                        onClick={() => setIsEditingProfile(true)}
-                        className="w-full sm:w-auto bg-premium-black text-white px-6 sm:px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all text-xs sm:text-sm"
-                      >
-                        Editar Informações
-                      </button>
-                    ) : (
-                      <>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setIsEditingProfile(false);
-                            setProfileFormData(user);
-                          }}
-                          className="w-full sm:w-auto bg-gray-100 text-gray-600 px-6 sm:px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-200 transition-all text-xs sm:text-sm order-2 sm:order-1"
-                        >
-                          Cancelar
-                        </button>
-                        <button 
-                          type="submit"
-                          className="w-full sm:w-auto bg-gold text-white px-6 sm:px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-premium-black transition-all flex items-center justify-center gap-2 text-xs sm:text-sm order-1 sm:order-2"
-                        >
-                          <Save size={18} /> Salvar Alterações
-                        </button>
-                      </>
+                    {user.role === 'admin' && (
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                          <Lock size={12} /> Senha de Acesso
+                        </label>
+                        <input 
+                          type="text" 
+                          value={profileFormData.password || ''} 
+                          onChange={e => setProfileFormData({...profileFormData, password: e.target.value})}
+                          placeholder="Sua senha secreta"
+                          className="w-full bg-gray-50 border-none rounded-xl p-4 outline-none focus:ring-2 focus:ring-gold transition-all text-sm sm:text-base font-mono"
+                        />
+                      </div>
                     )}
                   </div>
-                </form>
+                </div>
               </div>
             </div>
           </div>
@@ -1033,9 +1245,9 @@ export const AdminDashboard = () => {
             {activeTab === 'analytics' && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-serif mb-8">Desempenho de Vendas</h3>
-                <div className="h-64 flex items-end gap-4">
+              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h3 className="text-lg sm:text-xl font-serif mb-8">Desempenho de Vendas</h3>
+                <div className="h-64 flex items-end gap-2 sm:gap-4">
                   {/* Simple CSS Chart */}
                   {[40, 70, 45, 90, 65, 85, 100].map((h, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
@@ -1043,24 +1255,24 @@ export const AdminDashboard = () => {
                         className="w-full bg-gray-100 rounded-t-lg group-hover:bg-gold transition-all duration-500 relative"
                         style={{ height: `${h}%` }}
                       >
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-premium-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-premium-black text-white text-[8px] sm:text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                           {h}%
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dia {i+1}</span>
+                      <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">D{i+1}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-serif mb-8">Ranking de Produtos</h3>
+              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h3 className="text-lg sm:text-xl font-serif mb-8">Ranking de Produtos</h3>
                 <div className="space-y-6">
                   {sortedSales.map(([name, qty], idx) => (
                     <div key={name} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium">{name}</span>
-                        <span className="text-gray-400">{qty} unidades</span>
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="font-medium truncate pr-4">{name}</span>
+                        <span className="text-gray-400 shrink-0">{qty} un.</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <motion.div 
@@ -1071,24 +1283,24 @@ export const AdminDashboard = () => {
                       </div>
                     </div>
                   ))}
-                  {sortedSales.length === 0 && <p className="text-gray-400 italic">Dados insuficientes para gerar ranking.</p>}
+                  {sortedSales.length === 0 && <p className="text-gray-400 italic text-sm">Dados insuficientes para gerar ranking.</p>}
                 </div>
               </div>
             </div>
             
-            <div className="bg-premium-black text-white p-10 rounded-3xl flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-serif mb-2">Relatório Consolidado</h3>
-                <p className="text-gray-400 font-light">Resumo financeiro do período atual.</p>
+            <div className="bg-premium-black text-white p-6 sm:p-10 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="text-center md:text-left">
+                <h3 className="text-xl sm:text-2xl font-serif mb-2">Relatório Consolidado</h3>
+                <p className="text-gray-400 font-light text-sm">Resumo financeiro do período atual.</p>
               </div>
-              <div className="flex gap-16">
+              <div className="flex flex-col sm:flex-row gap-8 sm:gap-16">
                 <div className="text-center">
-                  <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">Faturamento</p>
-                  <p className="text-3xl font-serif text-gold">{formatPrice(totalRevenue)}</p>
+                  <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-1">Faturamento</p>
+                  <p className="text-2xl sm:text-3xl font-serif text-gold">{formatPrice(totalRevenue)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">Ticket Médio</p>
-                  <p className="text-3xl font-serif text-gold">{formatPrice(totalSalesCount ? totalRevenue / totalSalesCount : 0)}</p>
+                  <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-1">Ticket Médio</p>
+                  <p className="text-2xl sm:text-3xl font-serif text-gold">{formatPrice(totalSalesCount ? totalRevenue / totalSalesCount : 0)}</p>
                 </div>
               </div>
             </div>
@@ -1101,7 +1313,8 @@ export const AdminDashboard = () => {
       {isModalOpen && (
         <ProductModal 
           product={editingProduct} 
-          onClose={() => setIsModalOpen(false)} 
+          collections={storeConfig.collections || []}
+          onClose={() => { setIsModalOpen(false); setEditingProduct(null); }} 
           onSave={handleSaveProduct} 
         />
       )}

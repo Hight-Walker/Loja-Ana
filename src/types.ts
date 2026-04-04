@@ -45,6 +45,7 @@ export interface Order {
 export interface StoreConfig {
   name: string;
   logo: string;
+  homepageBackground?: string;
   description: string;
   phone: string;
   email: string;
@@ -52,6 +53,7 @@ export interface StoreConfig {
   instagram?: string;
   freeShippingEnabled?: boolean;
   freeShippingMinAmount?: number;
+  collections?: string[];
 }
 
 export interface AnalyticsData {
