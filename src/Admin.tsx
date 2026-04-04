@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Package, ShoppingCart, BarChart3, Plus, Edit2, Trash2, 
   TrendingUp, DollarSign, Users, ArrowUpRight, ArrowDownRight, LogOut, X, Save, Image as ImageIcon,
@@ -495,7 +495,15 @@ export const AdminDashboard = () => {
           )}
         </header>
 
-        {activeTab === 'dashboard' && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {activeTab === 'dashboard' && (
           <div className="space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard title="Faturamento Total" value={formatPrice(totalRevenue)} icon={DollarSign} trend="up" trendValue="12%" />
@@ -542,59 +550,61 @@ export const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'products' && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 text-xs font-bold uppercase tracking-widest text-gray-400">
-                <tr>
-                  <th className="px-8 py-6">Produto</th>
-                  <th className="px-8 py-6">Categoria</th>
-                  <th className="px-8 py-6">Preço</th>
-                  <th className="px-8 py-6">Status</th>
-                  <th className="px-8 py-6 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {products.map(product => (
-                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100">
-                          <img src={product.image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        </div>
-                        <span className="font-medium">{product.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-sm text-gray-500">{product.category}</td>
-                    <td className="px-8 py-6 font-bold">{formatPrice(product.price)}</td>
-                    <td className="px-8 py-6">
-                      {product.isBestSeller ? (
-                        <span className="bg-gold/10 text-gold text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Best Seller</span>
-                      ) : (
-                        <span className="bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Standard</span>
-                      )}
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setEditingProduct(product); setIsModalOpen(true); }} className="p-2 text-gray-400 hover:text-gold transition-colors"><Edit2 size={18} /></button>
-                        <button onClick={() => handleDeleteProduct(product.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+            {activeTab === 'products' && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left min-w-[800px]">
+                    <thead className="bg-gray-50 text-xs font-bold uppercase tracking-widest text-gray-400">
+                      <tr>
+                        <th className="px-8 py-6">Produto</th>
+                        <th className="px-8 py-6">Categoria</th>
+                        <th className="px-8 py-6">Preço</th>
+                        <th className="px-8 py-6">Status</th>
+                        <th className="px-8 py-6 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {products.map(product => (
+                        <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100">
+                                <img src={product.image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              </div>
+                              <span className="font-medium">{product.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6 text-sm text-gray-500">{product.category}</td>
+                          <td className="px-8 py-6 font-bold">{formatPrice(product.price)}</td>
+                          <td className="px-8 py-6">
+                            {product.isBestSeller ? (
+                              <span className="bg-gold/10 text-gold text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Best Seller</span>
+                            ) : (
+                              <span className="bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Standard</span>
+                            )}
+                          </td>
+                          <td className="px-8 py-6 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button onClick={() => { setEditingProduct(product); setIsModalOpen(true); }} className="p-2 text-gray-400 hover:text-gold transition-colors"><Edit2 size={18} /></button>
+                              <button onClick={() => handleDeleteProduct(product.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
-        {activeTab === 'orders' && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-8 border-b">
-              <h3 className="text-xl font-serif">Gerenciamento de Pedidos</h3>
-              <p className="text-sm text-gray-400">Visualize e acompanhe todas as vendas realizadas na loja.</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
+            {activeTab === 'orders' && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-8 border-b">
+                  <h3 className="text-xl font-serif">Gerenciamento de Pedidos</h3>
+                  <p className="text-sm text-gray-400">Visualize e acompanhe todas as vendas realizadas na loja.</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left min-w-[1000px]">
                 <thead className="bg-gray-50 text-xs font-bold uppercase tracking-widest text-gray-400">
                   <tr>
                     <th className="px-8 py-6">ID / Data</th>
@@ -664,14 +674,14 @@ export const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'customers' && (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-8 border-b">
-              <h3 className="text-xl font-serif">Base de Clientes</h3>
-              <p className="text-sm text-gray-400">Visualize todos os usuários registrados e suas informações.</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
+            {activeTab === 'customers' && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-8 border-b">
+                  <h3 className="text-xl font-serif">Base de Clientes</h3>
+                  <p className="text-sm text-gray-400">Visualize todos os usuários registrados e suas informações.</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left min-w-[900px]">
                 <thead className="bg-gray-50 text-xs font-bold uppercase tracking-widest text-gray-400">
                   <tr>
                     <th className="px-8 py-6">Nome / E-mail</th>
@@ -711,7 +721,7 @@ export const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'mystore' && (
+            {activeTab === 'mystore' && (
           <div className="max-w-4xl">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-8 border-b">
@@ -898,7 +908,7 @@ export const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'profile' && user && profileFormData && (
+            {activeTab === 'profile' && user && profileFormData && (
           <div className="max-w-4xl">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6 sm:p-8 border-b">
@@ -1020,7 +1030,7 @@ export const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'analytics' && (
+            {activeTab === 'analytics' && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
@@ -1084,6 +1094,8 @@ export const AdminDashboard = () => {
             </div>
           </div>
         )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {isModalOpen && (

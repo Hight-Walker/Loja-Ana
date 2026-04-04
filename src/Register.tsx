@@ -39,11 +39,22 @@ export const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-premium-black flex items-center justify-center p-6 py-12">
+    <div className="min-h-screen bg-premium-black flex items-center justify-center p-6 py-12 relative overflow-hidden">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=1920" 
+          alt="Luxury Watch Background" 
+          className="w-full h-full object-cover opacity-30"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-premium-black/80 via-premium-black/60 to-premium-black/90" />
+      </div>
+
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl w-full bg-white rounded-3xl p-12 shadow-2xl"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-2xl w-full bg-white rounded-3xl p-8 sm:p-12 shadow-2xl relative z-10 backdrop-blur-sm bg-white/95"
       >
         <div className="text-center mb-10">
           <h1 className="text-3xl font-serif mb-2">Criar Conta</h1>

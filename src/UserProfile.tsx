@@ -45,7 +45,18 @@ export const UserProfile = () => {
   if (!user || !formData) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0 z-0 h-[40vh]">
+        <img 
+          src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&q=80&w=1920" 
+          alt="Luxury Watch Background" 
+          className="w-full h-full object-cover opacity-40"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-premium-black/90 via-premium-black/70 to-gray-50" />
+      </div>
+
       <Toast 
         message={toast.message} 
         type={toast.type} 
@@ -53,24 +64,41 @@ export const UserProfile = () => {
         onClose={() => setToast({ ...toast, isVisible: false })} 
       />
       {/* Header */}
-      <header className="bg-premium-black text-white py-12 px-6">
+      <header className="relative z-10 text-white py-12 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-gold/20 rounded-full flex items-center justify-center border-2 border-gold/30">
+          <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-24 h-24 bg-gold/20 rounded-full flex items-center justify-center border-2 border-gold/30 backdrop-blur-sm"
+            >
               <UserIcon size={48} className="text-gold" />
-            </div>
+            </motion.div>
             <div>
-              <h1 className="text-3xl font-serif mb-1">{user.name}</h1>
-              <p className="text-gray-400 text-sm uppercase tracking-widest">{user.role === 'admin' ? 'Administrador' : 'Cliente Premium'}</p>
+              <motion.h1 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="text-3xl font-serif mb-1"
+              >
+                {user.name}
+              </motion.h1>
+              <motion.p 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="text-gray-400 text-sm uppercase tracking-widest"
+              >
+                {user.role === 'admin' ? 'Administrador' : 'Cliente Premium'}
+              </motion.p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
               <ArrowLeft size={16} /> Voltar para a Loja
             </Link>
             <button 
               onClick={handleLogout}
-              className="bg-white/10 hover:bg-red-500/20 hover:text-red-500 px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest transition-all flex items-center gap-2"
+              className="bg-white/10 hover:bg-red-500/20 hover:text-red-500 px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest transition-all flex items-center gap-2 backdrop-blur-sm"
             >
               <LogOut size={16} /> Sair
             </button>
@@ -78,14 +106,27 @@ export const UserProfile = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 -mt-8 pb-24">
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+      <main className="max-w-5xl mx-auto px-6 relative z-10 -mt-4 pb-24">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100"
+        >
           {/* Title */}
-          <div className="p-8 border-b">
+          <div className="p-8 border-b flex flex-col sm:flex-row items-center justify-between gap-4">
             <h2 className="text-xl font-serif font-bold uppercase tracking-widest text-premium-black">Informações Pessoais</h2>
+            {!isEditing && (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="bg-gray-50 text-premium-black px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gold hover:text-white transition-all flex items-center gap-2"
+              >
+                <Save size={16} /> Editar Perfil
+              </button>
+            )}
           </div>
 
-          <div className="p-8 md:p-12">
+          <div className="p-6 sm:p-8 md:p-12">
             <form onSubmit={handleSave} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
@@ -163,39 +204,29 @@ export const UserProfile = () => {
                 </div>
               </div>
 
-              <div className="pt-8 border-t flex justify-end gap-4">
-                {!isEditing ? (
+              {isEditing && (
+                <div className="pt-8 border-t flex flex-col sm:flex-row justify-end gap-4">
                   <button 
                     type="button"
-                    onClick={() => setIsEditing(true)}
-                    className="bg-premium-black text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setFormData(user);
+                    }}
+                    className="px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition-all text-xs"
                   >
-                    Editar Informações
+                    Cancelar
                   </button>
-                ) : (
-                  <>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(false);
-                        setFormData(user);
-                      }}
-                      className="bg-gray-100 text-gray-600 px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
-                    >
-                      Cancelar
-                    </button>
-                    <button 
-                      type="submit"
-                      className="bg-gold text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-premium-black transition-all flex items-center gap-2"
-                    >
-                      <Save size={18} /> Salvar Alterações
-                    </button>
-                  </>
-                )}
-              </div>
+                  <button 
+                    type="submit"
+                    className="bg-premium-black text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gold transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-gold/20 text-xs"
+                  >
+                    <Save size={18} /> Salvar Alterações
+                  </button>
+                </div>
+              )}
             </form>
           </div>
-        </div>
+        </motion.div>
       </main>
     </div>
   );

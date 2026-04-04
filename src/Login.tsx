@@ -31,11 +31,22 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-premium-black flex items-center justify-center p-6">
+    <div className="min-h-screen bg-premium-black flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&q=80&w=1920" 
+          alt="Luxury Watch Background" 
+          className="w-full h-full object-cover opacity-30"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-premium-black/80 via-premium-black/60 to-premium-black/90" />
+      </div>
+
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white rounded-3xl p-12 shadow-2xl"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-12 shadow-2xl relative z-10 backdrop-blur-sm bg-white/95"
       >
         <div className="text-center mb-10">
           <div className="w-16 h-16 bg-gold/10 text-gold rounded-full flex items-center justify-center mx-auto mb-4">

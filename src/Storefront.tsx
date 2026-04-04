@@ -86,31 +86,91 @@ const Navbar = ({ cartCount, onOpenCart, user, onLogout, storeConfig }: { cartCo
 };
 
 const Hero = ({ storeConfig }: { storeConfig: StoreConfig }) => (
-  <section className="relative h-screen flex items-center justify-center overflow-hidden bg-premium-black text-white">
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.4 }} transition={{ duration: 2 }} className="absolute inset-0 z-0">
+  <section className="relative h-[90vh] md:h-screen flex items-center justify-center overflow-hidden bg-premium-black text-white">
+    <motion.div 
+      initial={{ scale: 1.1, opacity: 0 }} 
+      animate={{ scale: 1, opacity: 0.4 }} 
+      transition={{ duration: 2.5, ease: "easeOut" }} 
+      className="absolute inset-0 z-0"
+    >
       <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=2000" alt="Hero" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
     </motion.div>
-    <div className="relative z-10 text-center px-6 max-w-4xl">
-      <motion.span initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="text-gold uppercase tracking-[0.3em] text-sm font-semibold mb-4 block">Excelência em cada segundo</motion.span>
-      <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8 }} className="text-5xl md:text-8xl font-serif mb-8 leading-tight">A Arte da <br /> <span className="italic">Precisão Eterna</span></motion.h1>
-      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto font-light">{storeConfig.description}</motion.p>
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.5 }}>
-        <button onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })} className="bg-gold hover:bg-white hover:text-premium-black text-white px-10 py-4 rounded-full transition-all duration-300 font-medium tracking-widest uppercase text-sm flex items-center gap-3 mx-auto group">Explorar Coleção <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" /></button>
+    <div className="relative z-10 text-center px-6 max-w-5xl">
+      <motion.span 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.5 }} 
+        className="text-gold uppercase tracking-[0.4em] text-[10px] sm:text-xs font-bold mb-6 block"
+      >
+        Excelência em cada segundo
+      </motion.span>
+      <motion.h1 
+        initial={{ opacity: 0, y: 30 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.7, duration: 1, ease: [0.22, 1, 0.36, 1] }} 
+        className="text-4xl sm:text-6xl md:text-8xl font-serif mb-8 leading-[1.1] tracking-tight"
+      >
+        A Arte da <br /> <span className="italic text-gold">Precisão Eterna</span>
+      </motion.h1>
+      <motion.p 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        transition={{ delay: 1.2, duration: 1 }} 
+        className="text-gray-300 text-base sm:text-lg md:text-xl mb-12 max-w-2xl mx-auto font-light leading-relaxed"
+      >
+        {storeConfig.description}
+      </motion.p>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 1.5 }}
+      >
+        <button 
+          onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })} 
+          className="bg-gold hover:bg-white hover:text-premium-black text-white px-8 sm:px-12 py-4 sm:py-5 rounded-full transition-all duration-500 font-bold tracking-[0.2em] uppercase text-[10px] sm:text-xs flex items-center gap-3 mx-auto group shadow-2xl shadow-gold/20 hover:shadow-white/10"
+        >
+          Explorar Coleção 
+          <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+        </button>
       </motion.div>
     </div>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 2, duration: 1 }}
+      className="absolute bottom-10 left-1/2 -translate-x-1/2 hidden md:block"
+    >
+      <div className="w-[1px] h-20 bg-gradient-to-b from-gold to-transparent animate-pulse" />
+    </motion.div>
   </section>
 );
 
 const ProductCard = ({ product, onAddToCart }: any) => (
-  <motion.div layout initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="group">
-    <div className="relative aspect-[4/5] overflow-hidden bg-gray-100 mb-4 rounded-2xl">
-      {product.isBestSeller && <span className="absolute top-4 left-4 z-10 bg-gold text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1"><Star size={10} fill="currentColor" /> Mais Vendido</span>}
+  <motion.div 
+    layout 
+    initial={{ opacity: 0, y: 30 }} 
+    whileInView={{ opacity: 1, y: 0 }} 
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+    className="group"
+  >
+    <div className="relative aspect-[4/5] overflow-hidden bg-gray-100 mb-6 rounded-2xl shadow-sm group-hover:shadow-xl transition-all duration-500">
+      {product.isBestSeller && (
+        <span className="absolute top-4 left-4 z-10 bg-gold text-white text-[9px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1 shadow-lg">
+          <Star size={10} fill="currentColor" /> Mais Vendido
+        </span>
+      )}
       <Link to={`/product/${product.id}`} className="block w-full h-full">
-        <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+        <img 
+          src={product.image} 
+          alt={product.name} 
+          className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110" 
+          referrerPolicy="no-referrer" 
+        />
       </Link>
-      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 pointer-events-none group-hover:pointer-events-auto">
-        <Link to={`/product/${product.id}`} className="bg-white text-premium-black p-3 rounded-full hover:bg-gold hover:text-white transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-lg">
-          <Search size={20} />
+      <div className="absolute inset-0 bg-premium-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center gap-4 pointer-events-none group-hover:pointer-events-auto backdrop-blur-[2px]">
+        <Link to={`/product/${product.id}`} className="bg-white text-premium-black p-4 rounded-full hover:bg-gold hover:text-white transition-all duration-300 transform translate-y-8 group-hover:translate-y-0 shadow-2xl">
+          <Search size={22} />
         </Link>
         <button 
           onClick={(e) => {
@@ -118,18 +178,22 @@ const ProductCard = ({ product, onAddToCart }: any) => (
             e.stopPropagation();
             onAddToCart(product);
           }} 
-          className="bg-white text-premium-black p-3 rounded-full hover:bg-gold hover:text-white transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 delay-75 shadow-lg"
+          className="bg-white text-premium-black p-4 rounded-full hover:bg-gold hover:text-white transition-all duration-300 transform translate-y-8 group-hover:translate-y-0 delay-75 shadow-2xl"
         >
-          <ShoppingBag size={20} />
+          <ShoppingBag size={22} />
         </button>
       </div>
     </div>
-    <div className="text-center">
-      <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">{product.category}</p>
+    <div className="text-center px-2">
+      <p className="text-[10px] text-gold font-bold uppercase tracking-[0.2em] mb-2">{product.category}</p>
       <Link to={`/product/${product.id}`}>
-        <h3 className="font-serif text-xl mb-2 group-hover:text-gold transition-colors">{product.name}</h3>
+        <h3 className="font-serif text-xl sm:text-2xl mb-2 group-hover:text-gold transition-colors duration-300">{product.name}</h3>
       </Link>
-      <p className="text-gold font-medium">{formatPrice(product.price)}</p>
+      <div className="flex items-center justify-center gap-3">
+        <div className="h-[1px] w-4 bg-gray-200" />
+        <p className="text-premium-black font-medium text-lg">{formatPrice(product.price)}</p>
+        <div className="h-[1px] w-4 bg-gray-200" />
+      </div>
     </div>
   </motion.div>
 );
@@ -310,15 +374,61 @@ export const Storefront = () => {
       />
       <Hero storeConfig={storeConfig} />
       <section id="products" className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
-          <div><span className="text-gold uppercase tracking-[0.3em] text-xs font-bold mb-4 block">Nossa Curadoria</span><h2 className="text-4xl md:text-5xl font-serif">Coleções Exclusivas</h2></div>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} /><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="bg-gray-50 border-none rounded-full pl-12 pr-6 py-3 focus:ring-2 focus:ring-gold outline-none text-sm w-full md:w-64" /></div>
-            <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-gray-50 rounded-full px-6 py-3 border-none outline-none text-sm font-medium">{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
-          </div>
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-10">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <span className="text-gold uppercase tracking-[0.4em] text-[10px] font-bold mb-4 block">Nossa Curadoria</span>
+            <h2 className="text-4xl md:text-6xl font-serif">Coleções <br className="hidden sm:block" /> <span className="italic">Exclusivas</span></h2>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4"
+          >
+            <div className="relative group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gold transition-colors" size={18} />
+              <input 
+                type="text" 
+                placeholder="Buscar relógio..." 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+                className="bg-gray-50 border border-transparent rounded-full pl-14 pr-8 py-4 focus:bg-white focus:ring-2 focus:ring-gold/10 focus:border-gold/20 outline-none text-sm w-full md:w-80 transition-all shadow-sm" 
+              />
+            </div>
+            <div className="relative">
+              <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gold" size={16} />
+              <select 
+                value={filter} 
+                onChange={e => setFilter(e.target.value)} 
+                className="bg-gray-50 rounded-full pl-12 pr-10 py-4 border border-transparent focus:bg-white focus:ring-2 focus:ring-gold/10 focus:border-gold/20 outline-none text-sm font-bold appearance-none cursor-pointer transition-all shadow-sm w-full"
+              >
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                <ChevronRight size={14} className="rotate-90" />
+              </div>
+            </div>
+          </motion.div>
         </div>
-        <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-          {filteredProducts.map(product => <ProductCard key={product.id} product={product} onAddToCart={addToCart} />)}
+        <motion.div 
+          layout 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-10 gap-y-20"
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredProducts.map((product, index) => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onAddToCart={addToCart} 
+              />
+            ))}
+          </AnimatePresence>
         </motion.div>
       </section>
       <Footer storeConfig={storeConfig} />
