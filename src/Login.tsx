@@ -22,9 +22,15 @@ export const Login = () => {
     
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const profile = await getUserProfile(userCredential.user.uid);
+      let profile = await getUserProfile(userCredential.user.uid);
       
       if (profile) {
+        // Auto-promote owner email if not already admin
+        if (profile.email.toLowerCase() === 'gustavodiasjjjacome@gmail.com' && profile.role !== 'admin') {
+          profile.role = 'admin';
+          await updateUserProfile(profile);
+        }
+
         setCurrentUser(profile);
         if (profile.role === 'admin') {
           localStorage.setItem('chronos_admin_auth', 'true');

@@ -29,6 +29,10 @@ export const Register = () => {
     
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      
+      // Auto-grant admin role to the owner's email
+      const isAdminEmail = formData.email.toLowerCase() === 'gustavodiasjjjacome@gmail.com';
+      
       const newUser: User = {
         id: userCredential.user.uid,
         name: formData.name,
@@ -37,12 +41,12 @@ export const Register = () => {
         phone: formData.phone,
         cpf: formData.cpf,
         birthDate: formData.birthDate,
-        role: 'user'
+        role: isAdminEmail ? 'admin' : 'user'
       };
 
       await updateUserProfile(newUser);
       setCurrentUser(newUser);
-      navigate('/');
+      navigate(isAdminEmail ? '/manager' : '/');
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
         setError('Este e-mail já está em uso.');
