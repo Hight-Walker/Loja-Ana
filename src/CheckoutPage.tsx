@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   ArrowLeft, CreditCard, Truck, ShieldCheck, CheckCircle2, 
-  ShoppingBag, MapPin, Phone, Mail, User as UserIcon, Lock
+  ShoppingBag, MapPin, Phone, Mail, User as UserIcon, Lock, Copy
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Product, CartItem, Order, User, StoreConfig } from './types';
@@ -18,8 +18,17 @@ export const CheckoutPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'Cartão de Crédito' | 'Pix'>('Cartão de Crédito');
+  const [copied, setCopied] = useState(false);
   
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Generate a temporary order ID if Pix is selected, or just generate one when needed
+    if (!orderId) {
+      setOrderId(Math.random().toString(36).substr(2, 9).toUpperCase());
+    }
+  }, [orderId]);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -51,12 +60,14 @@ export const CheckoutPage = () => {
 
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    // Simulate payment processing for card
+    if (paymentMethod === 'Cartão de Crédito') {
+      await new Promise(resolve => setTimeout(resolve, 2500));
+    }
 
-    const newOrderId = Math.random().toString(36).substr(2, 9).toUpperCase();
+    const currentOrderId = orderId; // Use the one generated in useEffect
     const newOrder: Order = { 
-      id: newOrderId, 
+      id: currentOrderId, 
       userId: user.id,
       items: cart, 
       total: total, 
@@ -66,18 +77,32 @@ export const CheckoutPage = () => {
         address: user.address || 'Endereço não informado'
       }, 
       date: new Date().toISOString(),
-      status: 'Processando',
-      paymentMethod: 'Cartão de Crédito'
+      status: 'Pendente',
+      paymentMethod: paymentMethod
     };
 
     saveOrder(newOrder);
     localStorage.removeItem('chronos_cart');
-    setOrderId(newOrderId);
     setIsProcessing(false);
     setIsCompleted(true);
     
     // Notify other components
     window.dispatchEvent(new Event('cartUpdated'));
+
+    // Handle WhatsApp redirection
+    if (paymentMethod === 'Pix' || paymentMethod === 'Cartão de Crédito') {
+      const itemsList = cart.map(item => `- ${item.quantity}x ${item.name}`).join('%0A');
+      const methodText = paymentMethod === 'Pix' ? 'via Pix' : 'com Cartão de Crédito';
+      const actionText = paymentMethod === 'Pix' ? 'Realizei o pagamento' : 'Gostaria de pagar';
+      
+      const message = `Olá! ${actionText} ${methodText} para o pedido *%23${currentOrderId}*.%0A%0A*Detalhes do Pedido:*%0A- Cliente: ${user.name}%0A- Total: ${formatPrice(total)}%0A%0A*Itens:*%0A${itemsList}%0A%0A_${paymentMethod === 'Pix' ? 'Fico no aguardo da confirmação!' : 'Aguardando link de pagamento ou instruções.'}_`;
+      const whatsappUrl = `https://wa.me/${storeConfig.whatsappNumber}?text=${message}`;
+      
+      // Delay slightly for visual feedback before redirecting
+      setTimeout(() => {
+        window.open(whatsappUrl, '_blank');
+      }, 1000);
+    }
   };
 
   if (isCompleted) {
@@ -195,20 +220,109 @@ export const CheckoutPage = () => {
                 <div className="w-10 h-10 bg-gold/10 text-gold rounded-full flex items-center justify-center">
                   <CreditCard size={20} />
                 </div>
-                <h2 className="text-xl font-serif">Pagamento</h2>
+                <h2 className="text-xl font-serif">Escolha o Método de Pagamento</h2>
               </div>
-              <div className="p-6 border-2 border-gold bg-gold/5 rounded-2xl flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-8 bg-premium-black rounded flex items-center justify-center text-white text-[10px] font-bold">VISA</div>
-                  <div>
-                    <p className="font-bold text-sm">Cartão de Crédito</p>
-                    <p className="text-xs text-gray-500">Finalizado em Checkout Seguro</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button 
+                  onClick={() => setPaymentMethod('Cartão de Crédito')}
+                  className={cn(
+                    "p-6 border-2 rounded-2xl flex flex-col items-center gap-3 transition-all",
+                    paymentMethod === 'Cartão de Crédito' 
+                      ? "border-gold bg-gold/5" 
+                      : "border-gray-100 hover:border-gray-200"
+                  )}
+                >
+                  <CreditCard size={24} className={paymentMethod === 'Cartão de Crédito' ? "text-gold" : "text-gray-400"} />
+                  <span className="font-bold text-sm">Cartão de Crédito</span>
+                </button>
+
+                <button 
+                  onClick={() => setPaymentMethod('Pix')}
+                  className={cn(
+                    "p-6 border-2 rounded-2xl flex flex-col items-center gap-3 transition-all",
+                    paymentMethod === 'Pix' 
+                      ? "border-gold bg-gold/5" 
+                      : "border-gray-100 hover:border-gray-200"
+                  )}
+                >
+                  <div className="w-6 h-6 flex items-center justify-center font-bold text-xs bg-gray-400 text-white rounded-full">X</div>
+                  <span className="font-bold text-sm">Pix</span>
+                </button>
+              </div>
+
+              {paymentMethod === 'Cartão de Crédito' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8 p-6 bg-blue-50 rounded-2xl border border-dashed border-blue-200 space-y-4"
+                >
+                  <div className="flex items-center gap-3 text-blue-600">
+                    <ShieldCheck size={20} />
+                    <h3 className="font-serif text-lg">Pagamento Seguro InfinitePay</h3>
                   </div>
-                </div>
-                <CheckCircle2 size={20} className="text-gold" />
-              </div>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    O pagamento por cartão de crédito será processado via <strong className="text-premium-black">InfinitePay</strong>. 
+                    Estamos utilizando esta plataforma para garantir o máximo de segurança e criptografia em sua transação.
+                  </p>
+                  <div className="p-3 bg-white/50 rounded-xl text-[10px] text-blue-500 font-bold uppercase tracking-widest text-center">
+                    Ambiente 100% Protegido
+                  </div>
+                </motion.div>
+              )}
+
+              {paymentMethod === 'Pix' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8 p-6 bg-gray-50 rounded-2xl border border-dashed border-gold/30 space-y-6"
+                >
+                  <div className="text-center space-y-2">
+                    <h3 className="font-serif text-lg">Pague via Pix</h3>
+                    <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Chave Aleatória de Pagamento</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between group">
+                    <span className="font-mono text-sm break-all">{storeConfig.pixKey}</span>
+                    <button 
+                      onClick={() => {
+                        if (storeConfig.pixKey) {
+                          navigator.clipboard.writeText(storeConfig.pixKey);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }
+                      }}
+                      className="ml-4 p-2 text-gray-400 hover:text-gold hover:bg-gold/5 rounded-lg transition-all flex items-center gap-2"
+                      title="Copiar Chave Pix"
+                    >
+                      {copied ? (
+                        <>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Copiado!</span>
+                          <CheckCircle2 size={18} className="text-gold" />
+                        </>
+                      ) : (
+                        <Copy size={18} />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-gold/10 rounded-xl border border-gold/20 space-y-3">
+                    <div className="flex items-center gap-2 text-gold">
+                      <ShieldCheck size={16} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Instruções Importantes</span>
+                    </div>
+                    <ul className="text-xs text-gray-600 space-y-2 list-disc pl-4">
+                      <li>Ao realizar o Pix, cole o número do pedido na <strong>descrição</strong> do pagamento.</li>
+                      <li>Número do seu pedido: <strong className="text-premium-black">#{orderId}</strong></li>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+
               <p className="mt-6 text-xs text-gray-400 text-center italic">
-                * Em ambiente de demonstração, o pagamento é simulado.
+                {paymentMethod === 'Cartão de Crédito' 
+                  ? "* Pagamento processado em ambiente seguro."
+                  : "* O pedido será processado após a confirmação do Pix."}
               </p>
             </section>
           </div>
@@ -271,7 +385,7 @@ export const CheckoutPage = () => {
                     </>
                   ) : (
                     <>
-                      Finalizar Pedido
+                      {paymentMethod === 'Pix' ? 'Confirmar Pagamento Realizado' : 'Finalizar Pedido'}
                       <ArrowLeft size={20} className="rotate-180" />
                     </>
                   )}

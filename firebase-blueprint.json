@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "App user profiling including role and PII",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "cpf": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user", "dev"] }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Store product details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": "string" },
+        "isBestSeller": { "type": "boolean" }
+      },
+      "required": ["id", "name", "price", "description", "image", "category"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "customer": { "type": "object" },
+        "date": { "type": "string" },
+        "status": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "trackingCode": { "type": "string" }
+      },
+      "required": ["id", "userId", "items", "total", "customer", "date", "status", "paymentMethod"]
+    },
+    "StoreConfig": {
+      "title": "StoreConfig",
+      "description": "Store-wide configuration settings",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "logo": { "type": "string" },
+        "homepageBackground": { "type": "string" },
+        "description": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "instagram": { "type": "string" },
+        "freeShippingEnabled": { "type": "boolean" },
+        "freeShippingMinAmount": { "type": "number" },
+        "collections": { "type": "array", "items": { "type": "string" } },
+        "maintenance": { "type": "object" },
+        "pixKey": { "type": "string" },
+        "whatsappNumber": { "type": "string" }
+      },
+      "required": ["name", "description", "phone", "email", "address"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Store products"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Purchase orders"
+    },
+    "/config/store": {
+      "schema": "StoreConfig",
+      "description": "Global store configuration"
+    }
+  }
+}

@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      // For now, check if user in /users/{uid} has role == 'admin'
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Store Configuration
+    match /config/store {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Products
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+      
+      function isValidProduct(data) {
+        return data.keys().hasAll(['id', 'name', 'price', 'description', 'image', 'category']) &&
+               data.id is string && data.name is string && data.price is number &&
+               data.description is string && data.image is string && data.category is string;
+      }
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn(); // Allow user to create their own profile
+      allow update: if isSignedIn() && isOwner(userId) && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'address', 'phone', 'cpf', 'birthDate']);
+      allow delete: if isAdmin();
+
+      function isValidUser(data) {
+        return data.keys().hasAll(['id', 'name', 'email', 'role']) &&
+               data.id is string && data.name is string && data.email is string &&
+               data.role in ['admin', 'user', 'dev'];
+      }
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn(); // Allow signed in users to create orders
+      allow update: if isAdmin(); // Only admins can update status/tracking
+      allow delete: if isAdmin();
+
+      function isValidOrder(data) {
+        return data.keys().hasAll(['id', 'userId', 'items', 'total', 'customer', 'date', 'status', 'paymentMethod']) &&
+               data.id is string && data.userId is string && data.items is list &&
+               data.total is number && data.status is string;
+      }
+    }
+  }
+}

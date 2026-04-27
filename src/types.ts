@@ -1,9 +1,19 @@
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
 export interface Product {
   id: string;
   name: string;
   price: number;
   description: string;
   image: string;
+  images?: string[];
   category: string;
   isBestSeller?: boolean;
 }
@@ -21,10 +31,10 @@ export interface User {
   phone?: string;
   cpf?: string;
   birthDate?: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'dev';
 }
 
-export type OrderStatus = 'Pendente' | 'Processando' | 'Enviado' | 'Entregue' | 'Cancelado';
+export type OrderStatus = 'Pendente' | 'Pago' | 'Processando' | 'Enviado' | 'Entregue' | 'Cancelado';
 export type PaymentMethod = 'Cartão de Crédito' | 'Boleto' | 'Pix';
 
 export interface Order {
@@ -40,6 +50,7 @@ export interface Order {
   date: string;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
+  trackingCode?: string;
 }
 
 export interface StoreConfig {
@@ -54,6 +65,13 @@ export interface StoreConfig {
   freeShippingEnabled?: boolean;
   freeShippingMinAmount?: number;
   collections?: string[];
+  maintenance?: {
+    enabled: boolean;
+    time?: string;
+    reason?: string;
+  };
+  pixKey?: string;
+  whatsappNumber?: string;
 }
 
 export interface AnalyticsData {

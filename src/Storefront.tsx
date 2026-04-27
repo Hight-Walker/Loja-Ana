@@ -36,7 +36,7 @@ const Navbar = ({ cartCount, onOpenCart, user, onLogout, storeConfig }: { cartCo
             title="Ir para o Início"
           >
             {storeConfig.logo ? (
-              <img src={storeConfig.logo} alt={storeConfig.name} className="h-6 sm:h-8 w-auto object-contain" referrerPolicy="no-referrer" />
+              <img src={storeConfig.logo || undefined} alt={storeConfig.name} className="h-6 sm:h-8 w-auto object-contain" referrerPolicy="no-referrer" />
             ) : (
               <span className="text-xl sm:text-2xl font-serif font-bold tracking-tighter truncate max-w-[150px] sm:max-w-none">{storeConfig.name}<span className="text-gold">.</span></span>
             )}
@@ -52,6 +52,13 @@ const Navbar = ({ cartCount, onOpenCart, user, onLogout, storeConfig }: { cartCo
                     <LayoutDashboard size={16} />
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-widest hidden lg:block group-hover:text-gold transition-colors truncate max-w-[100px]">Painel Admin</span>
+                </Link>
+              ) : user.role === 'dev' ? (
+                <Link to="/dev-control" className="flex items-center gap-2 group" title="Painel Dev">
+                  <div className="w-8 h-8 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-all shrink-0">
+                    <LayoutDashboard size={16} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest hidden lg:block group-hover:text-green-500 transition-colors truncate max-w-[100px]">Painel Dev</span>
                 </Link>
               ) : (
                 <Link to="/profile" className="flex items-center gap-2 group" title="Meu Perfil">
@@ -167,7 +174,7 @@ const ProductCard = ({ product, onAddToCart }: any) => (
       )}
       <Link to={`/product/${product.id}`} className="block w-full h-full">
         <img 
-          src={product.image} 
+          src={product.image || undefined} 
           alt={product.name} 
           className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110" 
           referrerPolicy="no-referrer" 
@@ -208,7 +215,7 @@ const Footer = ({ storeConfig }: { storeConfig: StoreConfig }) => (
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
       <div className="col-span-1 md:col-span-2">
         {storeConfig.logo ? (
-          <img src={storeConfig.logo} alt={storeConfig.name} className="h-10 w-auto object-contain mb-8" referrerPolicy="no-referrer" />
+          <img src={storeConfig.logo || undefined} alt={storeConfig.name} className="h-10 w-auto object-contain mb-8" referrerPolicy="no-referrer" />
         ) : (
           <h2 className="text-3xl font-serif font-bold tracking-tighter mb-8">{storeConfig.name}<span className="text-gold">.</span></h2>
         )}
@@ -244,10 +251,10 @@ const Footer = ({ storeConfig }: { storeConfig: StoreConfig }) => (
         </ul>
       </div>
     </div>
-    <div className="max-w-7xl mx-auto pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] uppercase tracking-widest text-gray-500 font-bold">
-      <div className="flex flex-col gap-2 text-center md:text-left">
+    <div className="max-w-7xl mx-auto pt-12 border-t border-white/5 flex flex-col items-center gap-6 text-[10px] uppercase tracking-widest text-gray-500 font-bold">
+      <div className="flex flex-col gap-2 text-center">
         <p>© 2024 {storeConfig.name} PREMIUM WATCHES. TODOS OS DIREITOS RESERVADOS.</p>
-        <p className="text-gold/60">DESENVOLVIDO POR GUSTAVO WALKER, CEO DA DS COMPANY</p>
+        <p className="text-gold/60">DESENVOLVIDO POR GUSTAVO WALKER</p>
       </div>
       <div className="flex space-x-8">
         <a href="#" className="hover:text-white transition-colors">POLÍTICA DE PRIVACIDADE</a>
@@ -274,24 +281,26 @@ export const Storefront = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setProducts(getProducts());
-    setUser(getCurrentUser());
+    const init = async () => {
+      setProducts(await getProducts());
+      setUser(getCurrentUser());
+      setStoreConfig(await getStoreConfig());
+    };
+    init();
 
-    const handleConfigUpdate = () => {
-      setStoreConfig(getStoreConfig());
+    const handleConfigUpdate = async () => {
+      setStoreConfig(await getStoreConfig());
     };
 
     const handleCartUpdate = () => {
       const saved = localStorage.getItem('chronos_cart');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setCart(prev => {
-          if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
-            return parsed;
-          }
-          return prev;
-        });
-      }
+      const parsed = saved ? JSON.parse(saved) : [];
+      setCart(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
+          return parsed;
+        }
+        return prev;
+      });
     };
 
     window.addEventListener('storeConfigUpdated', handleConfigUpdate);
@@ -323,8 +332,6 @@ export const Storefront = () => {
       return [...prev, { ...product, quantity: 1 }];
     });
     showToast(`${product.name} adicionado ao carrinho!`);
-    // Sync with other components
-    window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const handleLogout = () => {
@@ -347,7 +354,7 @@ export const Storefront = () => {
   const updateQty = (id: string, delta: number) => setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item));
   const removeFromCart = (id: string) => setCart(prev => prev.filter(item => item.id !== id));
 
-  const handleCheckoutComplete = (customerData: any) => {
+  const handleCheckoutComplete = async (customerData: any) => {
     const newOrder: Order = { 
       id: Math.random().toString(36).substr(2, 9).toUpperCase(), 
       userId: user?.id || 'guest',
@@ -358,7 +365,7 @@ export const Storefront = () => {
       status: 'Processando',
       paymentMethod: 'Cartão de Crédito'
     };
-    saveOrder(newOrder);
+    await saveOrder(newOrder);
     setCart([]);
     setIsCheckoutOpen(false);
     showToast('Pedido realizado com sucesso!', 'success');

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Mail, Lock, ArrowRight, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ShieldCheck, User as UserIcon, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getUsers, setCurrentUser } from './lib/storage';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './lib/firebase';
+import { getUserProfile, setCurrentUser } from './lib/storage';
 import { cn } from './lib/utils';
 
 export const Login = () => {
@@ -10,28 +12,51 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const users = getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-
-    if (user) {
-      setCurrentUser(user, rememberMe);
-      if (user.role === 'admin') {
-        localStorage.setItem('chronos_admin_auth', 'true');
-        navigate('/manager');
+    setLoading(true);
+    setError('');
+    
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const profile = await getUserProfile(userCredential.user.uid);
+      
+      if (profile) {
+        setCurrentUser(profile);
+        if (profile.role === 'admin') {
+          localStorage.setItem('chronos_admin_auth', 'true');
+          navigate('/manager');
+        } else if (profile.role === 'dev') {
+          navigate('/dev-control');
+        } else {
+          navigate('/');
+        }
       } else {
-        navigate('/');
+        setError('Perfil não encontrado. Entre em contato com o suporte.');
       }
-    } else {
-      setError('E-mail ou senha incorretos.');
+    } catch (err: any) {
+      setError('E-mail ou senha incorretos ou erro de conexão.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-premium-black flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Back to store button */}
+      <Link 
+        to="/" 
+        className="absolute top-8 left-8 z-20 flex items-center gap-3 text-white/80 hover:text-gold transition-all group"
+      >
+        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-gold/10 group-hover:border-gold transition-all">
+          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+        </div>
+        <span className="text-[10px] font-bold uppercase tracking-[0.3em] hidden sm:block">Loja</span>
+      </Link>
+
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -72,7 +97,7 @@ export const Login = () => {
                 type="email" 
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-gray-50 border-none rounded-xl p-4 pl-12 outline-none focus:ring-2 focus:ring-gold transition-all"
+                className="w-full bg-gray-50 border-none rounded-xl h-[56px] pl-12 pr-4 outline-none focus:ring-2 focus:ring-gold transition-all"
                 placeholder="seu@email.com"
               />
             </div>
@@ -87,7 +112,7 @@ export const Login = () => {
                 type="password" 
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full bg-gray-50 border-none rounded-xl p-4 pl-12 outline-none focus:ring-2 focus:ring-gold transition-all"
+                className="w-full bg-gray-50 border-none rounded-xl h-[56px] pl-12 pr-4 outline-none focus:ring-2 focus:ring-gold transition-all"
                 placeholder="••••••••"
               />
             </div>

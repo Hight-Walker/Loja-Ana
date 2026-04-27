@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { User as UserIcon, Mail, Lock, MapPin, ArrowRight, CreditCard, Calendar, Phone } from 'lucide-react';
+import { User as UserIcon, Mail, Lock, MapPin, ArrowRight, CreditCard, Calendar, Phone, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getUsers, saveUser, setCurrentUser } from './lib/storage';
 import { User } from './types';
+import { CEPInput } from './components/CEPInput';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './lib/firebase';
+import { updateUserProfile, setCurrentUser } from './lib/storage';
 
 export const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,30 +19,54 @@ export const Register = () => {
     birthDate: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const users = getUsers();
+    setLoading(true);
+    setError('');
     
-    if (users.find(u => u.email === formData.email)) {
-      setError('Este e-mail já está em uso.');
-      return;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const newUser: User = {
+        id: userCredential.user.uid,
+        name: formData.name,
+        email: formData.email,
+        address: formData.address,
+        phone: formData.phone,
+        cpf: formData.cpf,
+        birthDate: formData.birthDate,
+        role: 'user'
+      };
+
+      await updateUserProfile(newUser);
+      setCurrentUser(newUser);
+      navigate('/');
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Este e-mail já está em uso.');
+      } else {
+        setError('Erro ao criar conta. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
     }
-
-    const newUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...formData,
-      role: 'user'
-    };
-
-    saveUser(newUser);
-    setCurrentUser(newUser);
-    navigate('/');
   };
 
   return (
     <div className="min-h-screen bg-premium-black flex items-center justify-center p-2 py-12 relative overflow-hidden w-full">
+      {/* Back to store button */}
+      <Link 
+        to="/" 
+        className="absolute top-8 left-8 z-20 flex items-center gap-3 text-white/80 hover:text-gold transition-all group"
+      >
+        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-gold/10 group-hover:border-gold transition-all">
+          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+        </div>
+        <span className="text-[10px] font-bold uppercase tracking-[0.3em] hidden sm:block">Loja</span>
+      </Link>
+      
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -68,75 +95,74 @@ export const Register = () => {
             </div>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 px-1">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Nome Completo</label>
-              <div className="flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-gold transition-all overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-300 flex-shrink-0">
-                  <UserIcon size={18} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 px-1">
+            <div className="space-y-2.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 ml-1">Nome Completo</label>
+              <div className="flex items-center bg-gray-50 border border-gray-100 rounded-2xl focus-within:ring-2 focus-within:ring-gold/20 focus-within:border-gold transition-all overflow-hidden">
+                <div className="pl-4 pr-3 text-gray-300 flex-shrink-0">
+                  <UserIcon size={16} />
                 </div>
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="flex-1 bg-transparent border-none py-4 pr-3 outline-none text-sm sm:text-base min-w-0 w-full" placeholder="Seu Nome" />
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="flex-1 bg-transparent border-none h-[56px] pr-4 outline-none text-sm min-w-0 w-full font-medium" placeholder="Seu Nome Completo" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">E-mail</label>
-              <div className="flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-gold transition-all overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-300 flex-shrink-0">
-                  <Mail size={18} />
+            <div className="space-y-2.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 ml-1">E-mail</label>
+              <div className="flex items-center bg-gray-50 border border-gray-100 rounded-2xl focus-within:ring-2 focus-within:ring-gold/20 focus-within:border-gold transition-all overflow-hidden">
+                <div className="pl-4 pr-3 text-gray-300 flex-shrink-0">
+                  <Mail size={16} />
                 </div>
-                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="flex-1 bg-transparent border-none py-4 pr-3 outline-none text-sm sm:text-base min-w-0 w-full" placeholder="seu@email.com" />
+                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="flex-1 bg-transparent border-none h-[56px] pr-4 outline-none text-sm min-w-0 w-full font-medium" placeholder="seu@email.com" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">CPF</label>
-              <div className="flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-gold transition-all overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-300 flex-shrink-0">
-                  <CreditCard size={18} />
+            <div className="space-y-2.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 ml-1">CPF</label>
+              <div className="flex items-center bg-gray-50 border border-gray-100 rounded-2xl focus-within:ring-2 focus-within:ring-gold/20 focus-within:border-gold transition-all overflow-hidden">
+                <div className="pl-4 pr-3 text-gray-300 flex-shrink-0">
+                  <CreditCard size={16} />
                 </div>
-                <input required type="text" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} className="flex-1 bg-transparent border-none py-4 pr-3 outline-none text-sm sm:text-base min-w-0 w-full" placeholder="000.000.000-00" />
+                <input required type="text" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} className="flex-1 bg-transparent border-none h-[56px] pr-4 outline-none text-sm min-w-0 w-full font-mono font-medium" placeholder="000.000.000-00" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Senha</label>
-              <div className="flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-gold transition-all overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-300 flex-shrink-0">
-                  <Lock size={18} />
+            <div className="space-y-2.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 ml-1">Senha</label>
+              <div className="flex items-center bg-gray-50 border border-gray-100 rounded-2xl focus-within:ring-2 focus-within:ring-gold/20 focus-within:border-gold transition-all overflow-hidden">
+                <div className="pl-4 pr-3 text-gray-300 flex-shrink-0">
+                  <Lock size={16} />
                 </div>
-                <input required type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="flex-1 bg-transparent border-none py-4 pr-3 outline-none text-sm sm:text-base min-w-0 w-full" placeholder="••••••••" />
+                <input required type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="flex-1 bg-transparent border-none h-[56px] pr-4 outline-none text-sm min-w-0 w-full font-medium" placeholder="••••••••" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Telefone</label>
-              <div className="flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-gold transition-all overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-300 flex-shrink-0">
-                  <Phone size={18} />
+            <div className="space-y-2.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 ml-1">Telefone</label>
+              <div className="flex items-center bg-gray-50 border border-gray-100 rounded-2xl focus-within:ring-2 focus-within:ring-gold/20 focus-within:border-gold transition-all overflow-hidden">
+                <div className="pl-4 pr-3 text-gray-300 flex-shrink-0">
+                  <Phone size={16} />
                 </div>
-                <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="flex-1 bg-transparent border-none py-4 pr-3 outline-none text-sm sm:text-base min-w-0 w-full" placeholder="(00) 00000-0000" />
+                <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="flex-1 bg-transparent border-none h-[56px] pr-4 outline-none text-sm min-w-0 w-full font-medium" placeholder="(00) 00000-0000" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Data de Nascimento</label>
-              <div className="flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-gold transition-all overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-300 flex-shrink-0">
-                  <Calendar size={18} />
+            <div className="space-y-2.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 ml-1">Data de Nascimento</label>
+              <div className="flex items-center bg-gray-50 border border-gray-100 rounded-2xl focus-within:ring-2 focus-within:ring-gold/20 focus-within:border-gold transition-all overflow-hidden">
+                <div className="pl-4 pr-3 text-gray-300 flex-shrink-0">
+                  <Calendar size={16} />
                 </div>
-                <input required type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="flex-1 bg-transparent border-none py-4 pr-1 outline-none h-[56px] text-sm sm:text-base min-w-0 w-full" />
+                <input required type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="flex-1 bg-transparent border-none h-[56px] pr-4 outline-none text-sm min-w-0 w-full font-medium" />
               </div>
             </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Endereço Completo</label>
-              <div className="flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-gold transition-all overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-300 flex-shrink-0">
-                  <MapPin size={18} />
-                </div>
-                <input required type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="flex-1 bg-transparent border-none py-4 pr-3 outline-none text-sm sm:text-base min-w-0 w-full" placeholder="Rua, Número, Bairro, Cidade, CEP" />
-              </div>
+            <div className="md:col-span-2 pt-4">
+              <CEPInput 
+                value={formData.address} 
+                onChange={(address) => setFormData({...formData, address})} 
+                minimal={true}
+                className="!p-0 !bg-transparent !border-none !shadow-none"
+              />
             </div>
           </div>
           

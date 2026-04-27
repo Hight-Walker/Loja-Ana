@@ -31,13 +31,19 @@ export const ProductPage = () => {
     return () => window.removeEventListener('cartUpdated', updateCartCount);
   }, []);
 
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+
   useEffect(() => {
-    const products = getProducts();
-    const found = products.find(p => p.id === id);
-    if (found) {
-      setProduct(found);
-    }
-    setLoading(false);
+    const fetchProduct = async () => {
+      const products = await getProducts();
+      const found = products.find(p => p.id === id);
+      if (found) {
+        setProduct(found);
+        setActiveImage(found.image);
+      }
+      setLoading(false);
+    };
+    fetchProduct();
   }, [id]);
 
   const addToCart = () => {
@@ -64,6 +70,8 @@ export const ProductPage = () => {
     <Link to="/" className="text-gold hover:underline">Voltar para a loja</Link>
   </div>;
 
+  const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
+
   return (
     <div className="min-h-screen bg-white">
       <Toast 
@@ -75,9 +83,11 @@ export const ProductPage = () => {
       <nav className="p-6 border-b sticky top-0 bg-white/80 backdrop-blur-md z-50">
         <div className="max-w-7xl mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-4">
           <div className="flex justify-start">
-            <Link to="/" className="flex items-center gap-2 text-gray-500 hover:text-premium-black transition-colors">
-              <ArrowLeft size={20} />
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest truncate max-w-[80px] sm:max-w-none">Voltar</span>
+            <Link to="/" className="flex items-center gap-3 text-premium-black hover:text-gold transition-all group py-2">
+              <div className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-gold/10 transition-colors">
+                <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">Voltar</span>
             </Link>
           </div>
           
@@ -102,20 +112,39 @@ export const ProductPage = () => {
 
       <main className="max-w-7xl mx-auto px-6 py-12 md:py-24">
         <div className="grid md:grid-cols-2 gap-16 items-start">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="bg-gray-50 rounded-[2.5rem] overflow-hidden aspect-square relative group shadow-2xl"
-          >
-            <img 
-              src={product.image} 
-              alt={product.name} 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
-              referrerPolicy="no-referrer" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          </motion.div>
+          <div className="space-y-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-gray-50 rounded-[2.5rem] overflow-hidden aspect-square relative group shadow-2xl"
+            >
+              <img 
+                src={activeImage || product.image || undefined} 
+                alt={product.name} 
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                referrerPolicy="no-referrer" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            </motion.div>
+
+            {productImages.length > 1 && (
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {productImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(img)}
+                    className={cn(
+                      "w-20 sm:w-24 aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-300 shrink-0",
+                      activeImage === img ? "border-gold scale-105 shadow-lg shadow-gold/20" : "border-transparent opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    <img src={img || undefined} alt={`${product.name} ${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <motion.div 
             initial={{ opacity: 0, y: 30 }}

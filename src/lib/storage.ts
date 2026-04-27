@@ -1,14 +1,50 @@
-import { Product, Order, User, StoreConfig } from "../types";
+import { 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where,
+  onSnapshot
+} from "firebase/firestore";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged 
+} from "firebase/auth";
+import { db, auth } from "./firebase";
+import { Product, Order, User, StoreConfig, OperationType } from "../types";
 
-const PRODUCTS_KEY = "chronos_products";
-const ORDERS_KEY = "chronos_orders";
-const USERS_KEY = "chronos_users";
-const CURRENT_USER_KEY = "chronos_current_user";
-const STORE_CONFIG_KEY = "chronos_store_config";
+// Collection names
+const PRODUCTS_COLLECTION = "products";
+const ORDERS_COLLECTION = "orders";
+const USERS_COLLECTION = "users";
+const CONFIG_DOC = "config/store";
 
+// Error handling helper
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// Store Config
 const DEFAULT_STORE_CONFIG: StoreConfig = {
   name: "CHRONOS",
-  logo: "", // Empty means use default text logo
+  logo: "",
   homepageBackground: "https://images.unsplash.com/photo-1508685096489-7aac29145fe0?auto=format&fit=crop&q=80&w=1920",
   description: "Excelência em cada segundo. Descubra nossa coleção exclusiva de relógios que transcendem o tempo.",
   phone: "(11) 99999-9999",
@@ -17,162 +53,214 @@ const DEFAULT_STORE_CONFIG: StoreConfig = {
   instagram: "@chronos.premium",
   freeShippingEnabled: true,
   freeShippingMinAmount: 20000,
-  collections: ["Luxo", "Minimalista", "Clássico", "Esportivo"]
+  collections: ["Luxo", "Minimalista", "Clássico", "Esportivo"],
+  maintenance: {
+    enabled: false,
+    time: "",
+    reason: ""
+  },
+  pixKey: "000.000.000-00",
+  whatsappNumber: "5511999999999"
 };
 
-export const getStoreConfig = (): StoreConfig => {
-  const stored = localStorage.getItem(STORE_CONFIG_KEY);
-  if (!stored) {
-    localStorage.setItem(STORE_CONFIG_KEY, JSON.stringify(DEFAULT_STORE_CONFIG));
+export const getStoreConfig = async (): Promise<StoreConfig> => {
+  try {
+    const docRef = doc(db, "config", "store");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { ...DEFAULT_STORE_CONFIG, ...docSnap.data() } as StoreConfig;
+    }
+    return DEFAULT_STORE_CONFIG;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, CONFIG_DOC);
     return DEFAULT_STORE_CONFIG;
   }
-  return JSON.parse(stored);
 };
 
-export const saveStoreConfig = (config: StoreConfig) => {
-  localStorage.setItem(STORE_CONFIG_KEY, JSON.stringify(config));
-};
-
-const DEFAULT_PRODUCTS: Product[] = [
-  {
-    id: "1",
-    name: "Chronos Royal Oak",
-    price: 12500,
-    description: "Um ícone da relojoaria moderna, com acabamento em aço inoxidável e movimento automático de alta precisão.",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800",
-    category: "Luxo",
-    isBestSeller: true,
-  },
-  {
-    id: "2",
-    name: "Midnight Stealth",
-    price: 8900,
-    description: "Design minimalista em preto fosco, perfeito para ocasiões formais e uso diário sofisticado.",
-    image: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&q=80&w=800",
-    category: "Minimalista",
-  },
-  {
-    id: "3",
-    name: "Golden Heritage",
-    price: 15700,
-    description: "Ouro 18k e pulseira de couro legítimo. Uma herança para gerações.",
-    image: "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?auto=format&fit=crop&q=80&w=800",
-    category: "Clássico",
-    isBestSeller: true,
-  },
-  {
-    id: "4",
-    name: "Ocean Master",
-    price: 6400,
-    description: "Resistente a 300m, ideal para mergulho profissional sem perder a elegância.",
-    image: "https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?auto=format&fit=crop&q=80&w=800",
-    category: "Esportivo",
-  },
-];
-
-export const getProducts = (): Product[] => {
-  const stored = localStorage.getItem(PRODUCTS_KEY);
-  if (!stored) {
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(DEFAULT_PRODUCTS));
-    return DEFAULT_PRODUCTS;
+export const saveStoreConfig = async (config: StoreConfig) => {
+  try {
+    const docRef = doc(db, "config", "store");
+    await setDoc(docRef, config);
+    window.dispatchEvent(new Event('storeConfigUpdated'));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, CONFIG_DOC);
   }
-  return JSON.parse(stored);
 };
 
-export const saveProducts = (products: Product[]) => {
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-};
-
-export const getOrders = (): Order[] => {
-  const stored = localStorage.getItem(ORDERS_KEY);
-  return stored ? JSON.parse(stored) : [];
-};
-
-export const saveOrders = (orders: Order[]) => {
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-};
-
-export const saveOrder = (order: Order) => {
-  const orders = getOrders();
-  orders.push(order);
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-};
-
-export const updateOrder = (updatedOrder: Order) => {
-  const orders = getOrders();
-  const newOrders = orders.map(o => o.id === updatedOrder.id ? updatedOrder : o);
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders));
-};
-
-export const deleteOrder = (id: string) => {
-  const orders = getOrders();
-  const newOrders = orders.filter(o => o.id !== id);
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders));
-};
-
-export const getUsers = (): User[] => {
-  const stored = localStorage.getItem(USERS_KEY);
-  const users: User[] = stored ? JSON.parse(stored) : [];
-  
-  // Ensure default admin exists
-  if (!users.find(u => u.email === 'admin@chronos.com')) {
-    const admin: User = {
-      id: 'admin-1',
-      name: 'Administrador Chronos',
-      email: 'admin@chronos.com',
-      password: 'admin123',
-      role: 'admin'
-    };
-    users.push(admin);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+// Sync version for backwards compatibility where possible (uses local cache)
+let cachedConfig: StoreConfig = DEFAULT_STORE_CONFIG;
+onSnapshot(doc(db, "config", "store"), (doc) => {
+  if (doc.exists()) {
+    cachedConfig = { ...DEFAULT_STORE_CONFIG, ...doc.data() } as StoreConfig;
+    window.dispatchEvent(new Event('storeConfigUpdated'));
   }
-  
-  return users;
+});
+
+export const getStoreConfigSync = (): StoreConfig => cachedConfig;
+
+// Products
+export const getProducts = async (): Promise<Product[]> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as Record<string, any>;
+      return { ...data, id: doc.id } as Product;
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, PRODUCTS_COLLECTION);
+    return [];
+  }
 };
 
-export const saveUsers = (users: User[]) => {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+export const saveProducts = async (products: Product[]) => {
+  try {
+    for (const product of products) {
+      const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
+      await setDoc(docRef, product);
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, PRODUCTS_COLLECTION);
+  }
 };
 
-export const saveUser = (user: User) => {
-  const users = getUsers();
-  users.push(user);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+export const saveProduct = async (product: Product) => {
+  try {
+    const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
+    await setDoc(docRef, product);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `${PRODUCTS_COLLECTION}/${product.id}`);
+  }
 };
 
-export const updateUser = (updatedUser: User) => {
-  const users = getUsers();
-  const newUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-  localStorage.setItem(USERS_KEY, JSON.stringify(newUsers));
+export const deleteProduct = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, PRODUCTS_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `${PRODUCTS_COLLECTION}/${id}`);
+  }
+};
+
+// Orders
+export const getOrders = async (): Promise<Order[]> => {
+  try {
+    const user = auth.currentUser;
+    if (!user) return [];
+    
+    let q;
+    const userSnap = await getDoc(doc(db, USERS_COLLECTION, user.uid));
+    const userData = userSnap.data();
+    
+    if (userData?.role === 'admin' || userData?.role === 'dev') {
+      q = query(collection(db, ORDERS_COLLECTION));
+    } else {
+      q = query(collection(db, ORDERS_COLLECTION), where("userId", "==", user.uid));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as Record<string, any>;
+      return { ...data, id: doc.id } as Order;
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, ORDERS_COLLECTION);
+    return [];
+  }
+};
+
+export const saveOrder = async (order: Order) => {
+  try {
+    await setDoc(doc(db, ORDERS_COLLECTION, order.id), order);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `${ORDERS_COLLECTION}/${order.id}`);
+  }
+};
+
+export const updateOrder = async (order: Order) => {
+  try {
+    await updateDoc(doc(db, ORDERS_COLLECTION, order.id), order as any);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `${ORDERS_COLLECTION}/${order.id}`);
+  }
+};
+
+export const deleteOrder = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, ORDERS_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `${ORDERS_COLLECTION}/${id}`);
+  }
+};
+
+// Users
+export const getUserProfile = async (uid: string): Promise<User | null> => {
+  try {
+    const docSnap = await getDoc(doc(db, USERS_COLLECTION, uid));
+    return docSnap.exists() ? (docSnap.data() as User) : null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `${USERS_COLLECTION}/${uid}`);
+    return null;
+  }
+};
+
+export const updateUserProfile = async (user: User) => {
+  try {
+    await setDoc(doc(db, USERS_COLLECTION, user.id), user, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `${USERS_COLLECTION}/${user.id}`);
+  }
 };
 
 export const getCurrentUser = (): User | null => {
-  const persistent = localStorage.getItem(CURRENT_USER_KEY);
-  if (persistent) return JSON.parse(persistent);
-  
-  const session = sessionStorage.getItem(CURRENT_USER_KEY);
-  if (session) return JSON.parse(session);
-  
-  return null;
+  const stored = localStorage.getItem("chronos_current_user");
+  return stored ? JSON.parse(stored) : null;
 };
 
-export const setCurrentUser = (user: User | null, rememberMe: boolean = false) => {
+export const setCurrentUser = (user: User | null) => {
   if (user) {
-    if (rememberMe) {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-    } else {
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-    }
+    localStorage.setItem("chronos_current_user", JSON.stringify(user));
   } else {
-    localStorage.removeItem(CURRENT_USER_KEY);
-    sessionStorage.removeItem(CURRENT_USER_KEY);
-    localStorage.removeItem('chronos_admin_auth');
+    localStorage.removeItem("chronos_current_user");
+    signOut(auth);
+  }
+  window.dispatchEvent(new Event('authUpdated'));
+};
+
+// Admin functions
+export const getUsers = async (): Promise<User[]> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, USERS_COLLECTION));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as Record<string, any>;
+      return { ...data, id: doc.id } as User;
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, USERS_COLLECTION);
+    return [];
+  }
+};
+
+export const saveUsers = async (users: User[]) => {
+  try {
+    for (const user of users) {
+      await setDoc(doc(db, USERS_COLLECTION, user.id), user, { merge: true });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, USERS_COLLECTION);
+  }
+};
+
+export const saveOrders = async (orders: Order[]) => {
+  try {
+    for (const order of orders) {
+      await setDoc(doc(db, ORDERS_COLLECTION, order.id), order, { merge: true });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, ORDERS_COLLECTION);
   }
 };
 
 export const clearAllSessions = () => {
-  localStorage.removeItem(CURRENT_USER_KEY);
-  sessionStorage.removeItem(CURRENT_USER_KEY);
-  localStorage.removeItem('chronos_admin_auth');
-  // In a real app, this would invalidate tokens on the server
+  localStorage.removeItem("chronos_current_user");
+  signOut(auth);
+  window.dispatchEvent(new Event('authUpdated'));
 };
