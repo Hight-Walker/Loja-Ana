@@ -48,10 +48,15 @@ export const Register = () => {
       setCurrentUser(newUser);
       navigate(isAdminEmail ? '/manager' : '/');
     } catch (err: any) {
+      console.error('Registration error:', err);
       if (err.code === 'auth/email-already-in-use') {
         setError('Este e-mail já está em uso.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('A senha é muito fraca (mínimo 6 caracteres).');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('O login por E-mail/Senha não está ativado no Console do Firebase.');
       } else {
-        setError('Erro ao criar conta. Tente novamente.');
+        setError(`Erro: ${err.message || 'Erro ao criar conta. Tente novamente.'}`);
       }
     } finally {
       setLoading(false);
